@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Learning Assistant - Study Records</title>
+    <link rel="stylesheet" href="../styles/main.css">
+    <link rel="stylesheet" href="../styles/record.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-left">
+            <a href="index.html" class="back-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19 12H5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </a>
+            <h1>Study Records</h1>
+        </div>
+    </header>
+
+    <main>
+        <div class="tabs-container">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="records">Session History</button>
+                <button class="tab-btn" data-tab="analytics">Progress</button>
+            </div>
+            
+            <div class="tab-content active" id="records-tab">
+                <div class="record-container">
+                    <div class="record-header">
+                        <div class="filters">
+                            <div class="filter-group">
+                                <label for="record-type">Filter by Type</label>
+                                <select id="record-type" title="Select record type" class="filter-select">
+                                    <option value="all">All Records</option>
+                                    <option value="voice">Voice Chats</option>
+                                    <option value="text">Text Chats</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label for="date-filter">Filter by Date</label>
+                                <input type="date" id="date-filter" title="Select date" class="date-input" lang="en">
+                            </div>
+                        </div>
+                        <button id="export-button" class="export-btn">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M14 10V12.6667C14 13.0203 13.8595 13.3594 13.6095 13.6095C13.3594 13.8595 13.0203 14 12.6667 14H3.33333C2.97971 14 2.64057 13.8595 2.39052 13.6095C2.14048 13.3594 2 13.0203 2 12.6667V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M11.3334 5.33337L8.00008 2.00004L4.66675 5.33337" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M8 2V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Export Records
+                        </button>
+                    </div>
+                    
+                    <div class="stats-container">
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-time">0</div>
+                            <div class="stat-label">Total Study Time (min)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-sessions">0</div>
+                            <div class="stat-label">Sessions</div>
+                        </div>
+                    </div>
+                    
+                    <div id="download-progress" class="download-progress"></div>
+                    
+                    <div class="record-list" id="record-list">
+                        <!-- Records will be added dynamically by JavaScript -->
+                        <div class="empty-state" id="empty-state">
+                            <img src= "../assets/record.svg" alt="No records">
+                            <p>No study records yet</p>
+                            <p class="hint">Start practicing with voice or text chat to build your history</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="analytics-tab">
+                <div class="analytics-container">
+                    <div class="analytics-flex-layout">
+                        <div class="analytics-column">
+                            <div class="progress-chart" id="progress-chart">
+                                <!-- Progress chart will be added dynamically by JavaScript -->
+                            </div>
+                        </div>
+                        
+                        <div class="analytics-column">
+                            <div class="performance-metrics">
+                                <h3>Performance Metrics</h3>
+                                <div class="metrics-grid">
+                                    <div class="metric-card">
+                                        <div class="metric-title">Average Session Length</div>
+                                        <div class="metric-value" id="avg-session-length">0 min</div>
+                                    </div>
+                                    <div class="metric-card">
+                                        <div class="metric-title">Weekly Goal Progress</div>
+                                        <div class="metric-value" id="weekly-goal">0%</div>
+                                        <div class="progress-bar">
+                                            <div class="progress" id="goal-progress"></div>
+                                        </div>
+                                    </div>
+                                    <div class="metric-card">
+                                        <div class="metric-title">Learning Streak</div>
+                                        <div class="metric-value" id="learning-streak">0 days</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="../features/record.js"></script>
+</body>
+</html> 

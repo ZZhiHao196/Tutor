@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Text Chat Practice</title>
+    <link rel="stylesheet" href="../styles/main.css">
+    <link rel="stylesheet" href="../styles/chat.css">
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <button class="return-icon" id="chat-return-btn" type="button" title="Return to main page">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+        <div class="header-controls">
+            <button class="clear-history-btn" id="clear-history-btn" type="button" title="Clear chat history">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 6H5H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="chat-section">
+            <div class="chat-messages" id="chat-messages">
+                <!-- Messages will be added here dynamically -->
+                
+                <!-- Message Template (Hidden) - For reference only -->
+                <div id="message-template" style="display:none;">
+                    <!-- Message content goes here -->
+                    <div class="message-content"><div class="message-text"></div></div>
+                    
+                    <!-- Controls outside the bubble -->
+                    <div class="message-controls">
+                        <button class="replay-button" title="Replay audio">
+                            <img src="../assets/replay-simple.svg" alt="Replay" />
+                            <span class="replay-count"></span>
+                        </button>
+                        <button class="show-text-button" style="display: none;">
+                            <img src="../assets/show-text-simple.svg" alt="Show Text" />
+                            Show text
+                        </button>
+                    </div>
+                </div>
+                <!-- End Template -->
+            </div>
+            <audio id="ai-audio-player" style="display: none;"></audio>
+
+            <div class="status-indicator" id="status-indicator"></div>
+
+            <div class="input-container">
+                <input type="text" placeholder="Type your message in English..." id="message-input" class="message-input">
+                <button class="send-button" id="send-button" type="button" title="Send message">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9L22 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="hint-panel">
+        <div class="hint-text">
+            <p><strong>Hint:</strong> The AI tutor will help you practice English conversation skills.</p>
+            <p>Try asking questions, discussing topics you're interested in, or requesting help with English.</p>
+        </div>
+    </div>
+
+    <!-- Save Session Modal -->
+    <div id="save-modal-backdrop" class="modal-backdrop" style="display: none;">
+        <div id="save-modal" class="modal">
+            <h2>Save Session?</h2>
+            <p id="modal-message">You had a conversation of <span id="modal-turn-count">0</span> turns. Would you like to save this session to your records?</p>
+            <div class="modal-actions">
+                <button id="modal-dont-save-btn" class="modal-btn btn-secondary">Don't Save</button>
+                <button id="modal-save-btn" class="modal-btn btn-primary recommend">Save Session</button>
+            </div>
+        </div>
+    </div>
+    <!-- End Modal -->
+
+    <script type="module" src="../features/chat.js"></script>
+</body>
+</html>

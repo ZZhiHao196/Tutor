@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Chat Practice</title>
+    <link rel="stylesheet" href="../styles/main.css">
+    <link rel="stylesheet" href="../styles/call.css">
+</head>
+<body>
+    <div class="voice-chat-container">
+        <div class="ai-avatar-container">
+            <div class="ai-face" id="ai-face"></div>
+        </div>
+
+        <audio id="ai-audio-player" style="display: none;" crossorigin="anonymous"></audio>
+
+        <div class="controls">
+            <button class="control-btn mic-btn" id="mic-btn" type="button" title="Toggle microphone">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+            </button>
+            <button class="control-btn exit-btn" id="call-return-btn" type="button" title="End call">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../settings/settings.js" type="module"></script>
+
+    <!-- Save Session Modal -->
+    <div id="save-modal-backdrop" class="modal-backdrop" style="display: none;">
+        <div id="save-modal" class="modal">
+            <h2>Save Session?</h2>
+            <p id="modal-message">Do you want to save this session to your records?</p>
+            <div class="modal-actions">
+                <button id="modal-dont-save-btn" class="modal-btn btn-secondary">Don't Save</button>
+                <button id="modal-save-btn" class="modal-btn btn-primary recommend">Save Session</button>
+            </div>
+        </div>
+    </div>
+    <!-- End Modal -->
+
+    <script src="../features/call.js" type="module"></script>
+</body>
+</html>
