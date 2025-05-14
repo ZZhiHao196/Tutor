@@ -1,5 +1,5 @@
 import { settingsService } from '../settings/settings.js';    
-import { addRecord, generateLanguageFeedback } from '../record.js';
+import { addRecord, generateLanguageFeedback } from '../features/record.js';
 import { GeminiAgent } from '../core/agent.js'; // Import GeminiAgent
 import { getConfig, getWebsocketUrl } from '../core/config.js'; // Import config utils
 import { base64ToBlob, markdownToHtml, showSaveModal, hideSaveModal, createSessionRecord } from '../utils/utils.js'; // Import utility functions

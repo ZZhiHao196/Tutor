@@ -15,31 +15,19 @@
 
 ```
 tutor/
-├── .venv/                  Python 虚拟环境目录
-├── .vscode/                VSCode 编辑器配置
+├── index.html              主页（主入口）
+├── pages/                  前端页面（chat.html、call.html、record.html 等）
+├── js/                     所有 JS 功能模块，包含以下子模块：
+│   ├── audio-tools/        客户端音频录制与处理工具（如音频录制、可视化、流处理等）
+│   ├── core/               核心模块（如双向音频流代理、客户端封装、应用配置等）
+│   ├── features/           主要功能实现（如文本聊天、语音对话、学习记录与分析等）
+│   ├── settings/           设置页面逻辑与配置服务
+│   └── utils/              通用工具函数（如网络请求、音频处理、WebSocket 工具等）
+├── styles/                 界面样式（CSS 文件）
 ├── assets/                 静态资源 (图标、图片等)
-├── audio-tools/            客户端音频录制与处理工具
-├── backup/                 备份文件目录
-├── core/                   核心模块：
-│   ├── agent.js            双向音频流代理
-│   ├── client.js           客户端封装及配置
-│   └── config.js           应用程序配置设置
-├── features/               功能实现：
-│   ├── chat.js             文本聊天功能
-│   ├── call.js             实时语音对话功能
-│   └── record.js           学习记录与分析功能
-├── pages/                  前端页面：
-│   ├── index.html          主页
-│   ├── chat.html           文本聊天页面
-│   ├── call.html           语音对话页面
-│   └── record.html         学习记录展示页面
-├── settings/               设置页面与配置服务
-├── styles/                 界面样式
-├── utils/                  通用工具函数 (网络请求、音频处理等)
 ├── .env                    环境变量 (API 密钥、代理 URL 等)
-├── README.md               项目介绍文档
-├── 梳理.md                 思路梳理与笔记
-└── 项目计划.md             项目任务与开发计划
+├── LICENSE                 许可证
+└── 项目介绍.md             项目介绍文档
 ```
 
 ## 功能 (Features)
