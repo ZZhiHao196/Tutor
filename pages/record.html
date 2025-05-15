@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>English Learning Assistant - Study Records</title>
+    <title>英语学习助手 - 学习记录</title>
     <link rel="stylesheet" href="../styles/main.css">
     <link rel="stylesheet" href="../styles/record.css">
 </head>
@@ -16,15 +16,15 @@
                     <path d="M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
             </a>
-            <h1>Study Records</h1>
+            <h1>学习记录</h1>
         </div>
     </header>
 
     <main>
         <div class="tabs-container">
             <div class="tabs">
-                <button class="tab-btn active" data-tab="records">Session History</button>
-                <button class="tab-btn" data-tab="analytics">Progress</button>
+                <button class="tab-btn active" data-tab="records">历史会话</button>
+                <button class="tab-btn" data-tab="analytics">学习进度</button>
             </div>
             
             <div class="tab-content active" id="records-tab">
@@ -32,16 +32,16 @@
                     <div class="record-header">
                         <div class="filters">
                             <div class="filter-group">
-                                <label for="record-type">Filter by Type</label>
-                                <select id="record-type" title="Select record type" class="filter-select">
-                                    <option value="all">All Records</option>
-                                    <option value="voice">Voice Chats</option>
-                                    <option value="text">Text Chats</option>
+                                <label for="record-type">按类型筛选</label>
+                                <select id="record-type" title="选择记录类型" class="filter-select">
+                                    <option value="all">所有记录</option>
+                                    <option value="voice">语音对话</option>
+                                    <option value="text">文字对话</option>
                                 </select>
                             </div>
                             <div class="filter-group">
-                                <label for="date-filter">Filter by Date</label>
-                                <input type="date" id="date-filter" title="Select date" class="date-input" lang="en">
+                                <label for="date-filter">按日期筛选</label>
+                                <input type="date" id="date-filter" title="选择日期" class="date-input" lang="zh">
                             </div>
                         </div>
                         <button id="export-button" class="export-btn">
@@ -50,18 +50,18 @@
                                 <path d="M11.3334 5.33337L8.00008 2.00004L4.66675 5.33337" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                                 <path d="M8 2V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
-                            Export Records
+                            导出记录
                         </button>
                     </div>
                     
                     <div class="stats-container">
                         <div class="stat-card">
                             <div class="stat-value" id="total-time">0</div>
-                            <div class="stat-label">Total Study Time (min)</div>
+                            <div class="stat-label">总学习时间（分钟）</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-value" id="total-sessions">0</div>
-                            <div class="stat-label">Sessions</div>
+                            <div class="stat-label">会话次数</div>
                         </div>
                     </div>
                     
@@ -70,9 +70,9 @@
                     <div class="record-list" id="record-list">
                         <!-- Records will be added dynamically by JavaScript -->
                         <div class="empty-state" id="empty-state">
-                            <img src= "../assets/record.svg" alt="No records">
-                            <p>No study records yet</p>
-                            <p class="hint">Start practicing with voice or text chat to build your history</p>
+                            <img src= "../assets/record.svg" alt="暂无记录">
+                            <p>暂无学习记录</p>
+                            <p class="hint">通过语音或文字对话开始练习，建立您的学习历史</p>
                         </div>
                     </div>
                 </div>
@@ -89,22 +89,22 @@
                         
                         <div class="analytics-column">
                             <div class="performance-metrics">
-                                <h3>Performance Metrics</h3>
+                                <h3>表现指标</h3>
                                 <div class="metrics-grid">
                                     <div class="metric-card">
-                                        <div class="metric-title">Average Session Length</div>
-                                        <div class="metric-value" id="avg-session-length">0 min</div>
+                                        <div class="metric-title">平均会话时长</div>
+                                        <div class="metric-value" id="avg-session-length">0 分钟</div>
                                     </div>
                                     <div class="metric-card">
-                                        <div class="metric-title">Weekly Goal Progress</div>
+                                        <div class="metric-title">每周目标进度</div>
                                         <div class="metric-value" id="weekly-goal">0%</div>
                                         <div class="progress-bar">
                                             <div class="progress" id="goal-progress"></div>
                                         </div>
                                     </div>
                                     <div class="metric-card">
-                                        <div class="metric-title">Learning Streak</div>
-                                        <div class="metric-value" id="learning-streak">0 days</div>
+                                        <div class="metric-title">学习连续天数</div>
+                                        <div class="metric-value" id="learning-streak">0 天</div>
                                     </div>
                                 </div>
                             </div>

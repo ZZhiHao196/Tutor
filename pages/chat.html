@@ -1,23 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>English Text Chat Practice</title>
+    <title>英语文字对话练习</title>
     <link rel="stylesheet" href="../styles/main.css">
     <link rel="stylesheet" href="../styles/chat.css">
 </head>
 <body>
     <div class="header">
         <div class="header-left">
-            <button class="return-icon" id="chat-return-btn" type="button" title="Return to main page">
+            <button class="return-icon" id="chat-return-btn" type="button" title="返回主页">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
             </button>
         </div>
         <div class="header-controls">
-            <button class="clear-history-btn" id="clear-history-btn" type="button" title="Clear chat history">
+            <button class="clear-history-btn" id="clear-history-btn" type="button" title="清除聊天记录">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M3 6H5H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -38,13 +38,13 @@
                     
                     <!-- Controls outside the bubble -->
                     <div class="message-controls">
-                        <button class="replay-button" title="Replay audio">
-                            <img src="../assets/replay-simple.svg" alt="Replay" />
+                        <button class="replay-button" title="重新播放">
+                            <img src="../assets/replay-simple.svg" alt="重新播放" />
                             <span class="replay-count"></span>
                         </button>
                         <button class="show-text-button" style="display: none;">
-                            <img src="../assets/show-text-simple.svg" alt="Show Text" />
-                            Show text
+                            <img src="../assets/show-text-simple.svg" alt="显示文本" />
+                            显示文本
                         </button>
                     </div>
                 </div>
@@ -55,8 +55,8 @@
             <div class="status-indicator" id="status-indicator"></div>
 
             <div class="input-container">
-                <input type="text" placeholder="Type your message in English..." id="message-input" class="message-input">
-                <button class="send-button" id="send-button" type="button" title="Send message">
+                <input type="text" placeholder="输入消息..." id="message-input" class="message-input">
+                <button class="send-button" id="send-button" type="button" title="发送消息">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9L22 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
@@ -67,19 +67,19 @@
 
     <div class="hint-panel">
         <div class="hint-text">
-            <p><strong>Hint:</strong> The AI tutor will help you practice English conversation skills.</p>
-            <p>Try asking questions, discussing topics you're interested in, or requesting help with English.</p>
+            <p><strong>提示：</strong>口语助手将帮助您练习英语对话技能。</p>
+            <p>尝试提问、讨论您感兴趣的话题，或请求英语方面的帮助。</p>
         </div>
     </div>
 
     <!-- Save Session Modal -->
     <div id="save-modal-backdrop" class="modal-backdrop" style="display: none;">
         <div id="save-modal" class="modal">
-            <h2>Save Session?</h2>
-            <p id="modal-message">You had a conversation of <span id="modal-turn-count">0</span> turns. Would you like to save this session to your records?</p>
+            <h2>保存会话？</h2>
+            <p id="modal-message">您进行了<span id="modal-turn-count">0</span>轮对话。是否要将此会话保存到您的记录中？</p>
             <div class="modal-actions">
-                <button id="modal-dont-save-btn" class="modal-btn btn-secondary">Don't Save</button>
-                <button id="modal-save-btn" class="modal-btn btn-primary recommend">Save Session</button>
+                <button id="modal-dont-save-btn" class="modal-btn btn-secondary">不保存</button>
+                <button id="modal-save-btn" class="modal-btn btn-primary recommend">保存会话</button>
             </div>
         </div>
     </div>

@@ -203,8 +203,10 @@ function createRecordElement(record) {
             <div class="record-info">
                 <div class="record-date">${formattedDate}</div>
                 <div class="record-badges">
-                    <span class="record-type-badge ${record.type}">${record.type === 'voice' ? 'Voice Chat' : 'Text Chat'}</span>
-                    <span class="record-stat-badge">${record.duration} min</span>
+                    <span class="record-type-badge ${record.type}">${
+                        record.type === 'voice' ? '语音对话' : '文字聊天'
+                    }</span>
+                    <span class="record-stat-badge">${record.duration} 分钟</span>
                 </div>
             </div>
             <div class="record-actions">
@@ -218,13 +220,15 @@ function createRecordElement(record) {
         <div class="record-details">
             <div class="record-sections">
                 <section class="record-section">
-                    <h4 class="section-title">Summary</h4>
-                    <p class="section-content">${record.summary ? markdownToHtml(record.summary) : 'No summary available'}</p>
+                    <h4 class="section-title">对话摘要</h4>
+                    <p class="section-content">${
+                        record.summary ? markdownToHtml(record.summary) : '暂无摘要内容'
+                    }</p>
                 </section>
                 
-                ${record.feedback ? 
-                    `<section class="record-section">
-                        <h4 class="section-title">Language Feedback</h4>
+                ${record.feedback ? `
+                    <section class="record-section">
+                        <h4 class="section-title">语言反馈</h4>
                         <div class="feedback-content">${markdownToHtml(record.feedback)}</div>
                     </section>` : ''
                 }
@@ -465,9 +469,9 @@ function generateVocabularyList() {
     
     // Generate HTML for vocabulary list
     elements.vocabularyList.innerHTML = `
-        <h3>Your Vocabulary (${sortedVocabulary.length})</h3>
+        <h3>词汇列表 (${sortedVocabulary.length})</h3>
         <div class="vocabulary-search">
-            <input type="text" id="vocabulary-search" placeholder="Search words...">
+            <input type="text" id="vocabulary-search" placeholder="搜索词汇...">
         </div>
         <div class="vocabulary-items">
             ${sortedVocabulary.length > 0 ? 
@@ -477,12 +481,12 @@ function generateVocabularyList() {
                         <div class="vocabulary-definition">${word.definition}</div>
                         ${word.example ? `<div class="vocabulary-example">"${word.example}"</div>` : ''}
                         <div class="vocabulary-meta">
-                            <span class="vocabulary-count">Used ${word.count} time${word.count > 1 ? 's' : ''}</span>
-                            <span class="vocabulary-first-seen">First seen: ${formatDate(word.dates[0])}</span>
+                            <span class="vocabulary-count">使用 ${word.count} 次</span>
+                            <span class="vocabulary-first-seen">首次出现: ${formatDate(word.dates[0])}</span>
                         </div>
                     </div>
                 `).join('') 
-                : '<div class="empty-vocabulary">No vocabulary words recorded yet</div>'
+                : '<div class="empty-vocabulary">暂无已记录的词汇</div>'
             }
         </div>
     `;
@@ -583,7 +587,7 @@ function exportStudyData() {
         const records = JSON.parse(localStorage.getItem('studyRecords')) || [];
         
         if (records.length === 0) {
-            alert('No study records to export.');
+            alert('暂无学习记录可导出');
             return;
         }
         
@@ -595,11 +599,11 @@ function exportStudyData() {
         // Create download link
         const downloadLink = document.createElement('a');
         downloadLink.href = url;
-        downloadLink.download = `english_learning_records_${new Date().toISOString().split('T')[0]}.json`;
+        downloadLink.download = `中文学习记录_${new Date().toISOString().split('T')[0]}.json`;
         
         // Show progress
         elements.downloadProgress.style.display = 'block';
-        elements.downloadProgress.textContent = 'Preparing download...';
+        elements.downloadProgress.textContent = '正在准备下载...';
         
         // Trigger download after a brief delay to show progress
         setTimeout(() => {
@@ -608,14 +612,14 @@ function exportStudyData() {
             document.body.removeChild(downloadLink);
             URL.revokeObjectURL(url);
             
-            elements.downloadProgress.textContent = 'Download complete!';
+            elements.downloadProgress.textContent = '下载完成!';
             setTimeout(() => {
                 elements.downloadProgress.style.display = 'none';
             }, 3000);
         }, 800);
     } catch (error) {
-        console.error('Failed to export study data:', error);
-        alert('Failed to export study data: ' + error.message);
+        console.error('导出学习数据失败: ', error);
+        alert('导出学习数据失败: ' + error.message);
         elements.downloadProgress.style.display = 'none';
     }
 }

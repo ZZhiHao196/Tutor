@@ -153,7 +153,7 @@ function resetUtteranceTimeout() {
 async function initializeAudioSystem() {
     try {
         console.log("Initializing audio system...");
-        appendSystemMessage("Initializing..."); // Add initial message
+        appendSystemMessage("正在初始化..."); // Add initial message
         
         // 1. Create AudioContext
         if (!state.audioContext) {
@@ -241,7 +241,7 @@ async function initializeAudioSystem() {
         return true;
     } catch (error) {
         console.error("Audio system initialization failed:", error);
-        appendSystemMessage(`Audio setup error: ${error.message}`);
+        appendSystemMessage(`音频设置错误: ${error.message}`);
         
         // Clean up any partially initialized components
         if (state.audioContext && state.audioContext.state !== 'closed') {
@@ -278,7 +278,7 @@ async function initializeAgent() {
         // 如果原始选择的模型与当前使用的不同，说明系统进行了自动切换
         if (originalModel && originalModel !== currentModel && 
             !(originalModel.includes('-exp') || originalModel === 'gemini-2.0-flash-live-001')) {
-            appendSystemMessage(`Note: Using ${currentModel} for voice call (${originalModel} doesn't support voice calls).`, "warning");
+            appendSystemMessage(`注意: 语音通话使用 ${currentModel} 模型 (${originalModel} 不支持语音通话)。`, "warning");
         }
 
         state.geminiAgent = new GeminiAgent({
@@ -297,14 +297,14 @@ async function initializeAgent() {
         
         state.geminiAgent.on('disconnected', () => {
             console.warn("Agent connection lost");
-            appendSystemMessage("Connection lost. Please try again.");
+            appendSystemMessage("连接丢失。请重试。");
             if (state.isListening) stopListening().catch(console.error);
             elements.micButton.disabled = true;
         });
         
         state.geminiAgent.on('error', (error) => {
             console.error("Agent error:", error);
-            appendSystemMessage("Connection error. Please check settings or try again.");
+            appendSystemMessage("连接错误。请检查设置或重试。");
             if (state.isListening) stopListening().catch(console.error);
             elements.micButton.disabled = true;
         });
@@ -402,12 +402,12 @@ async function initializeAgent() {
         } catch (error) {
             console.error("Agent connection failed:", error);
             elements.micButton.disabled = false; // Re-enable button so user can retry
-            appendSystemMessage("Voice connection failed. You can still try clicking the mic.");
+            appendSystemMessage("语音连接失败。您仍可以尝试点击麦克风按钮。");
             return false;
         }
     } catch (error) {
         console.error("Agent initialization failed:", error);
-        appendSystemMessage(`Agent setup error: ${error.message}`);
+        appendSystemMessage(`助手设置错误: ${error.message}`);
         
         if (state.geminiAgent) {
             state.geminiAgent.disconnect();
@@ -432,14 +432,14 @@ async function startListening() {
 
     if (!state.audioRecorder || !state.geminiAgent) {
         console.error("Missing required component. Recorder:", !!state.audioRecorder, "Agent:", !!state.geminiAgent);
-        appendSystemMessage("System not ready. Please retry or refresh.");
+        appendSystemMessage("系统未准备就绪。请重试或刷新页面。");
         return;
     }
     
     // --- Add AudioContext State Check ---
     if (!state.audioContext || state.audioContext.state !== 'running') {
         console.error(`Cannot start listening, AudioContext state is ${state.audioContext?.state}.`);
-        appendSystemMessage("Audio system not ready. Try clicking mic again or refresh.");
+        appendSystemMessage("音频系统未准备就绪。请再次点击麦克风或刷新页面。");
         // Reset potential UI cues if start fails early
         elements.micButton.classList.remove('active', 'on');
         elements.aiFace.classList.remove('listening');
@@ -588,7 +588,7 @@ async function startListening() {
         startLongSilenceTimer(); // Start the timer as soon as listening begins
     } catch (error) {
         console.error("Error starting listening:", error);
-        appendSystemMessage(`Error starting mic: ${error.message}`);
+        appendSystemMessage(`启动麦克风错误: ${error.message}`);
         // Visual indicator - Reset UI
         elements.micButton.classList.remove('active');
         elements.micButton.classList.remove('on');
@@ -659,7 +659,7 @@ async function stopListening() {
         console.log("User listening stopped successfully");
     } catch (error) {
         console.error("Error stopping listening:", error);
-        appendSystemMessage(`Error: ${error.message}`);
+        appendSystemMessage(`错误: ${error.message}`);
     } finally {
         elements.micButton.disabled = !state.isCallActive;
     }
@@ -698,14 +698,14 @@ async function handleLongSilence() {
     if (wasListening && state.geminiAgent && state.geminiAgent.getConnectionStatus() && elements.aiAudioElement.paused) {
         try {
             console.log("AI checking in due to prolonged silence (mic remains on)...");
-            appendSystemMessage("Are you still there? (Mic is still on)"); // Inform user
+            appendSystemMessage("您还在吗？（麦克风仍在开启状态）"); // Inform user
             
             // Send the check-in text message, but DO NOT stop listening.
             await state.geminiAgent.sendText("Are you still there?");
             
         } catch (error) {
             console.error("Failed during silence check-in:", error);
-            appendSystemMessage("Error during silence check. Mic may be unresponsive.");
+            appendSystemMessage("静默检查期间出错。麦克风可能无响应。");
             // Don't automatically stop listening here either, as it might trigger the original bug.
             // User might need to manually toggle or refresh.
         }
@@ -799,21 +799,21 @@ function showSaveModal() {
         // Use session duration information
         const durationMinutes = Math.floor(state.sessionDuration / 60000);
         const durationSeconds = Math.floor((state.sessionDuration % 60000) / 1000);
-        const durationText = `${durationMinutes}min${durationSeconds}sec`;
+        const durationText = `${durationMinutes}分${durationSeconds}秒`;
         
         // Directly update the entire message text, not dependent on modalTurnCount element
         if (state.sessionDuration >= MIN_DURATION_TO_RECOMMEND_SAVE) {
             // Over 60 seconds, recommend saving
-            modalMessage.textContent = `Your call duration was ${durationText}. We recommend saving this session.`;
+            modalMessage.textContent = `您的通话时长为${durationText}。建议保存此会话。`;
             elements.modalSaveBtn.classList.add('recommended');
-            elements.modalSaveBtn.textContent = 'Save Session';
-            elements.modalDontSaveBtn.textContent = "Don't Save";
+            elements.modalSaveBtn.textContent = '保存会话';
+            elements.modalDontSaveBtn.textContent = "不保存";
         } else if (state.sessionDuration >= MIN_DURATION_TO_ALLOW_SAVE) {
             // Over 30 seconds but less than 60, allow saving but don't recommend
-            modalMessage.textContent = `Your call duration was ${durationText}. Would you like to save this session?`;
+            modalMessage.textContent = `您的通话时长为${durationText}。是否要保存此会话？`;
             elements.modalSaveBtn.classList.remove('recommended');
-            elements.modalSaveBtn.textContent = 'Save Session';
-            elements.modalDontSaveBtn.textContent = "Don't Save";
+            elements.modalSaveBtn.textContent = '保存会话';
+            elements.modalDontSaveBtn.textContent = "不保存";
         } else {
             // Less than 30 seconds, don't show save dialog, exit directly
             console.log("[Modal] Session duration less than 30 seconds, not showing save dialog");
@@ -850,7 +850,7 @@ async function saveCallSession() {
     console.log("[Save Session] Attempting to save call session...");
     if (!state.startTime) {
         console.warn("[Save Session] Cannot save session, start time not recorded.");
-        appendSystemMessage("Cannot save session: Start time missing.", "error");
+        appendSystemMessage("无法保存会话：开始时间缺失。", "error");
         return;
     }
     
@@ -859,7 +859,7 @@ async function saveCallSession() {
     
     if (state.sessionDuration < MIN_DURATION_TO_ALLOW_SAVE) {
         console.warn(`[Save Session] Session duration less than ${MIN_DURATION_TO_ALLOW_SAVE/1000} seconds, not saving.`);
-        appendSystemMessage("Session too short to save.", "info");
+        appendSystemMessage("会话时间太短，无法保存。", "info");
         return;
     }
 
@@ -868,7 +868,7 @@ async function saveCallSession() {
     console.log(`[Save Session] Preparing to save session, total duration: ${durationMinutes}min${durationSeconds}sec`);
     
     // For voice calls, we'll use duration-based feedback instead of transcript-based
-    appendSystemMessage("Analyzing your speaking practice...", "info");
+    appendSystemMessage("正在分析您的口语练习...", "info");
     
     // Create a simple array with call information to pass to feedback generator
     const callData = [
@@ -892,14 +892,14 @@ async function saveCallSession() {
         const saved = addRecord(record);
         if (saved) {
             console.log("[Save Session] Call session saved successfully with feedback.");
-            appendSystemMessage("Session saved with practice feedback.", "info");
+            appendSystemMessage("会话已保存，包含练习反馈。", "info");
         } else {
             console.error("[Save Session] Failed to save call session via record.js");
-            appendSystemMessage("Failed to save session.", "error");
+            appendSystemMessage("保存会话失败。", "error");
         }
     } catch (error) {
         console.error("[Save Session] Error saving call session:", error);
-        appendSystemMessage(`Error saving session: ${error.message}`, "error");
+        appendSystemMessage(`保存会话错误: ${error.message}`, "error");
     }
 }
 // --- End Save Session Function ---
@@ -934,7 +934,7 @@ async function handleReturn() {
 async function initializeCallSystem() {
     try {
         console.log("Initializing call system...");
-        appendSystemMessage("Initializing..."); // Add initial message
+        appendSystemMessage("正在初始化..."); // Add initial message
         
         // 1. Initialize audio system (creates AudioContext and AudioRecorder)
         const audioInitialized = await initializeAudioSystem();
@@ -989,12 +989,12 @@ async function initializeCallSystem() {
         state.startTime = new Date(); // <-- Record start time
         state.lastDurationUpdate = Date.now();
         console.log("[Init] Call system initialized successfully. isCallActive:", state.isCallActive);
-        appendSystemMessage("System ready. Click the microphone to start."); // Update message on success
+        appendSystemMessage("系统已就绪。点击麦克风开始。"); // Update message on success
         return true;
         
     } catch (error) {
         console.error("[Init] Call system initialization failed:", error);
-        appendSystemMessage(`Error: ${error.message}. Please check console/settings.`);
+        appendSystemMessage(`错误: ${error.message}。请检查控制台/设置。`);
         
         // Cleanup
         state.isCallActive = false;

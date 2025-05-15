@@ -27,59 +27,59 @@
             <div class="settings-body">
                 <form id="settings-form" autocomplete="off">
                 <div class="setting-group">
-                    <h3>Model Settings</h3>
+                    <h3>模型设置</h3>
                     <div class="setting-item">
-                        <label for="model-type">Model Type</label>
+                        <label for="model-type">模型类型</label>
                         <select id="model-type">
                             <option value="gemini-2.0-flash-live-001">gemini-2.0-flash-live-001 (推荐)</option>
                             <option value="gemini-2.0-flash-live-preview-04-09">gemini-2.0-flash-live-preview-04-09</option>
                             <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp</option>
                         </select>
                     </div>
-                    <div class="model-note">注意：语音通话功能仅支持具有Live API能力的模型</div>
+                    <div class="model-note">注意:语音通话功能仅支持具有Live API能力的模型</div>
                     <div class="setting-item">
-                        <label for="api-key">API Key</label>
+                        <label for="api-key">API 密钥</label>
                         <input type="password" id="api-key" placeholder="Enter your API key" autocomplete="new-password">
                     </div>
                     <div class="setting-item">
-                        <label for="chat-api-proxy-url">Chat API Proxy URL:</label>
+                        <label for="chat-api-proxy-url">Chat API代理网址:</label>
                         <input type="password" id="chat-api-proxy-url" name="chatApiProxyUrl" placeholder="e.g., https://your-proxy.com/api/gemini/chat" autocomplete="new-password">
-                        <span class="input-note">Optional: Use this if direct API access is blocked.</span>
+                        <span class="input-note">可选: 如果直接API访问被阻止,请使用此选项.</span>
                     </div>
                 </div>
 
                 <!-- Domestic Model Support -->
                 <div class="setting-group">
-                    <h3>Domestic Model Support <span class="new-feature">New Feature</span></h3>
+                    <h3>国内模型支持 <span class="new-feature">新功能</span></h3>
                     <div class="setting-item">
                         <label class="toggle-label">
                             <input type="checkbox" id="use-domestic-api">
-                            <span>Domestic API (Use Domestic API)</span>
+                            <span>Domestic API (使用国内API)</span>
                         </label>
-                        <div class="domestic-api-note">Enable this option to use domestic API instead of Gemini API</div>
+                        <div class="domestic-api-note">启用此选项以使用国内API代替Gemini API</div>
                     </div>
                     
                     <div id="domestic-api-section" style="display: none;">
                         <div class="setting-item">
-                            <label for="domestic-model-type">Domestic Model Type</label>
+                            <label for="domestic-model-type">国内模型类型</label>
                             <select id="domestic-model-type">
                                 <option value="ecnu-max">ECNU-Max </option>
                                 <option value="ecnu-reasoner">ECNU-Reasoner </option>
                             </select>
                         </div>
                         <div class="setting-item">
-                            <label for="domestic-api-key">API Key</label>
+                            <label for="domestic-api-key">API 密钥</label>
                             <input type="password" id="domestic-api-key" placeholder="Enter Domestic Model API Key" autocomplete="new-password">
                         </div>
                         <div class="setting-item">
-                            <label for="domestic-api-endpoint">API Endpoint</label>
+                            <label for="domestic-api-endpoint">API 端点</label>
                             <input type="text" id="domestic-api-endpoint" placeholder="https://chat.ecnu.edu.cn/open/api/v1" value="https://chat.ecnu.edu.cn/open/api/v1">
                         </div>
                     </div>
                 </div>
 
                 <div class="setting-group">
-                    <h3>Model Parameters</h3>
+                    <h3>模型参数</h3>
                     <div class="setting-item">
                         <label for="temperature">Temperature</label>
                         <input type="range" id="temperature" min="0" max="2" step="0.1" value="1.8">
@@ -101,7 +101,7 @@
                 </div> 
 
                 <div class="setting-group">
-                    <h3>Voice Settings</h3>
+                    <h3>语音设置</h3>
                     <div class="setting-item">
                         <label for="sample-rate">Sample Rate</label>
                         <select id="sample-rate">
@@ -125,7 +125,7 @@
                         </select>
                     </div>
                     <div class="setting-item">
-                        <label for="voice-speed">Voice Speed</label>
+                        <label for="voice-speed">语速</label>
                         <div class="speed-options">
                             <div class="speed-option" data-speed="0.8">0.8x</div>
                             <div class="speed-option" data-speed="1.0">1.0x</div>
@@ -137,16 +137,16 @@
                 </div>
 
                 <div class="setting-group">
-                    <h3>System Instructions</h3>
+                    <h3>系统指令</h3>
                     <div class="setting-item">
-                        <label for="system-instructions">AI Instructions</label>
+                        <label for="system-instructions">AI指令</label>
                         <textarea id="system-instructions" rows="4" placeholder="Instructions for the AI">You are a helpful English tutor. Help the user practice English conversation.</textarea>
                     </div>
                 </div>
                 </form>
             </div>
             <div class="settings-footer">
-                <button class="save-btn" id="save-settings">Save Settings</button>
+                <button class="save-btn" id="save-settings">保存设置</button>
             </div>
         </div>
     </div>

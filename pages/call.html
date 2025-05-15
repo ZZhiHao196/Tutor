@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice Chat Practice</title>
+    <title>语音对话练习</title>
     <link rel="stylesheet" href="../styles/main.css">
     <link rel="stylesheet" href="../styles/call.css">
 </head>
@@ -16,7 +16,7 @@
         <audio id="ai-audio-player" style="display: none;" crossorigin="anonymous"></audio>
 
         <div class="controls">
-            <button class="control-btn mic-btn" id="mic-btn" type="button" title="Toggle microphone">
+            <button class="control-btn mic-btn" id="mic-btn" type="button" title="切换麦克风">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                     <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
@@ -24,7 +24,7 @@
                     <line x1="8" y1="23" x2="16" y2="23"></line>
                 </svg>
             </button>
-            <button class="control-btn exit-btn" id="call-return-btn" type="button" title="End call">
+            <button class="control-btn exit-btn" id="call-return-btn" type="button" title="结束通话">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -39,11 +39,11 @@
     <!-- Save Session Modal -->
     <div id="save-modal-backdrop" class="modal-backdrop" style="display: none;">
         <div id="save-modal" class="modal">
-            <h2>Save Session?</h2>
-            <p id="modal-message">Do you want to save this session to your records?</p>
+            <h2>保存会话？</h2>
+            <p id="modal-message">是否要将此会话保存到您的记录中？</p>
             <div class="modal-actions">
-                <button id="modal-dont-save-btn" class="modal-btn btn-secondary">Don't Save</button>
-                <button id="modal-save-btn" class="modal-btn btn-primary recommend">Save Session</button>
+                <button id="modal-dont-save-btn" class="modal-btn btn-secondary">不保存</button>
+                <button id="modal-save-btn" class="modal-btn btn-primary recommend">保存会话</button>
             </div>
         </div>
     </div>

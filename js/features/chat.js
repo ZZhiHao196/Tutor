@@ -808,7 +808,7 @@ function disableInput() {
     }
     
     if (elements.statusIndicator) {
-        elements.statusIndicator.textContent = 'AI is thinking...';
+        elements.statusIndicator.textContent = '思考ing...';
         elements.statusIndicator.style.display = 'block';
     }
 }
@@ -922,10 +922,10 @@ function performCleanupAndExit() {
 // clear chat history
 function clearChatHistory() {
     const chatMessages = document.getElementById('chat-messages');
-    if (chatMessages && confirm('Are you sure you want to clear all messages?')) {
+    if (chatMessages && confirm('确定要清除所有消息吗？')) {
         chatMessages.innerHTML = '';
         state.chatHistory = [];
-        appendMessage("Chat history cleared. Let's start a new conversation!", "system");
+        appendMessage("聊天记录已清除。让我们开始新的对话！", "system");
     }
 }
 
@@ -1017,7 +1017,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupEventListeners(); // This function now also sets up modal listeners
     
     // Display initial welcome message
-    appendMessage("Welcome! Type your message below to practice English.", "system");
+    appendMessage("欢迎！在下方输入消息开始练习英语。", "system");
 
     try {
         // Check current selected model
@@ -1034,12 +1034,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const modelType = state.apiType === 'domestic' 
             ? state.settings.domesticModelType 
             : state.settings.modelType;
-                appendMessage(`Connected to ${state.apiType} API using model: ${modelType}`, "system", "info");
+                appendMessage(`已连接到${state.apiType === 'domestic' ? '国内' : 'Gemini'} API，使用模型: ${modelType}`, "system", "info");
             }
         } else {
             // Initialization failed, try fallback to other API type
             console.warn("Chat initialization failed. Attempting to fallback to other API type.");
-            appendMessage("Connection failed with current model. Trying fallback...", "system", "warning");
+            appendMessage("当前模型连接失败。尝试备用方案...", "system", "warning");
             
             // Try switching API type
             settingsService.updateSetting('useDomesticAPI', !settings.useDomesticAPI);
@@ -1049,15 +1049,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const modelType = state.apiType === 'domestic' 
                     ? state.settings.domesticModelType 
                     : state.settings.modelType;
-                appendMessage(`Connected using fallback to ${state.apiType} API with model: ${modelType}`, "system", "info");
-                appendMessage("Your selected model might not be available with your current settings.", "system", "warning");
+                appendMessage(`已通过备用${state.apiType === 'domestic' ? '国内' : 'Gemini'} API连接，使用模型: ${modelType}`, "system", "info");
+                appendMessage("您选择的模型可能不适用于当前设置。", "system", "warning");
             } else {
-                appendMessage(`Cannot connect to any API. Please check your API keys and settings.`, "system", "error");
+                appendMessage(`无法连接到任何API。请检查您的API密钥和设置。`, "system", "error");
             }
         }
     } catch (error) {
         console.error("Error during chat initialization:", error);
-        appendMessage(`Error initializing chat: ${error.message}`, "system", "error");
+        appendMessage(`聊天初始化错误: ${error.message}`, "system", "error");
     }
 });
         
@@ -1074,7 +1074,7 @@ async function saveChatSession() {
 
     try {
         // Generate feedback before saving
-        appendMessage("Analyzing your English skills and conversation...", "system", "info");
+        appendMessage("正在分析您的英语技能和对话...", "system", "info");
         
         // Disable UI while generating feedback
         disableInput();
@@ -1083,7 +1083,7 @@ async function saveChatSession() {
         const result = await generateLanguageFeedback(state.chatHistory, callAPI, state.isConnected);
         
         if (!result) {
-            appendMessage("Could not analyze your conversation. Saving basic record only.", "system", "warning");
+            appendMessage("无法分析您的对话。仅保存基本记录。", "system", "warning");
             enableInput();
             return;
         }
@@ -1110,29 +1110,29 @@ async function saveChatSession() {
         
         if (saved) {
             console.log("Chat session saved successfully with feedback.");
-            appendMessage("Session saved with topic summary and language feedback.", "system", "info");
+            appendMessage("会话已保存，包含主题总结和语言反馈。", "system", "info");
             
             // Display topic summary to the user
             if (topicSummary) {
-                appendMessage("Topic Summary:", "system", "info");
+                appendMessage("总结:", "system", "info");
                 appendMessage(topicSummary, "ai", "normal", true);  // Set noAudio to true
             }
             
             // Display feedback to the user
             if (feedback) {
-                appendMessage("Language Feedback:", "system", "info");
+                appendMessage("语言反馈:", "system", "info");
                 appendMessage(feedback, "ai", "normal", true);  // Set noAudio to true
             }
         } else {
             console.error("Failed to save chat session via record.js");
-            appendMessage("Failed to save session.", "system", "error");
+            appendMessage("保存会话失败。", "system", "error");
         }
         
         // Re-enable input
         enableInput();
     } catch (error) {
         console.error("Error saving chat session:", error);
-        appendMessage(`Error saving session: ${error.message}`, "system", "error");
+        appendMessage(`保存会话错误: ${error.message}`, "system", "error");
         enableInput();
     }
 }
@@ -1174,8 +1174,8 @@ async function initChat() {
                        state.settings.apiKey;
         
         if (!apiKey) {
-            console.warn('API key not set in settings');
-            appendMessage(`API key not configured for ${state.apiType === 'domestic' ? 'Domestic' : 'Gemini'} API. Please go to Settings...`, "system");
+            console.warn(`API密钥未配置（${state.apiType === 'domestic' ? '国内' : 'Gemini'} API）。请前往设置...`);
+            appendMessage(`API密钥未配置（${state.apiType === 'domestic' ? '国内' : 'Gemini'} API）。请前往设置...`, "system");
             state.isConnected = false;
             enableInput();
             return false;
@@ -1242,7 +1242,7 @@ async function initChat() {
                 
                 if (!isLiveApiModel) {
                     console.warn(`Model ${selectedModel} does not support WebSocket Live API. Disabling Gemini agent.`);
-                    appendMessage(`Note: Real-time voice output and interaction not available for model (${selectedModel}). Using standard API.`, "system", "warning");
+                    appendMessage(`注意: 实时语音输出和交互对该模型 (${selectedModel}) 不可用。使用标准API。`, "system", "warning");
                     // Revert apiType to ensure standard API calls are used
                     state.apiType = 'gemini'; // Keep as gemini, but agent will be null
                     state.geminiVoiceAgent = null; 
@@ -1404,7 +1404,7 @@ async function initChat() {
                     } else {
                         console.warn("Gemini voice agent connection failed, TTS will not be available");
                         // Don't set agent to null here, let the agent's own logic handle retries
-                        appendMessage(`Could not connect for real-time voice output.`, "system", "warning");
+                        appendMessage(`无法连接实时语音输出。`, "system", "warning");
                     }
                 }
             } catch (error) {
@@ -1425,12 +1425,12 @@ async function initChat() {
                 state.isConnected = true;
             } else {
                 console.warn(`Failed to connect to ${state.apiType} API...`, testResult.error);
-                appendMessage(`Could not connect to the AI tutor: ${testResult.error}. Using simulation mode.`, "system");
+                appendMessage(`无法连接到AI助手: ${testResult.error}。使用模拟模式。`, "system");
                 state.isConnected = false;
             }
         } catch (error) {
             console.warn(`Failed to initialize ${state.apiType} API...`, error);
-            appendMessage(`Error connecting to the AI tutor: ${error.message}. Using simulation mode.`, "system");
+            appendMessage(`连接AI助手时出错: ${error.message}。使用模拟模式。`, "system");
             state.isConnected = false;
         }
         
@@ -1443,7 +1443,7 @@ async function initChat() {
         return state.isConnected; // Return true only if connection succeeded
     } catch (error) {
         console.error('Chat system initialization failed:', error);
-        appendMessage(`Chat system initialization failed: ${error.message}. Using simulation mode.`, "system");
+        appendMessage(`聊天系统初始化失败: ${error.message}。使用模拟模式。`, "system");
         enableInput();
         return false;
     }
@@ -1787,7 +1787,7 @@ async function sendMessage(text) {
         
     } catch (error) {
         console.error('Failed to send message:', error);
-        appendMessage("Sorry, there was an error sending your message. Please try again.", "system");
+        appendMessage("抱歉，发送消息时出错。请重试。", "system");
         enableInput();
     }
 }
