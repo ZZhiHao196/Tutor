@@ -1,4 +1,4 @@
-import { initializeSettingsPanel, initializeSpeedOptions } from '../settings/settings.js'; // Keep UI functions
+import { initializeSettingsPanel, initializeSpeedOptions, settingsService } from '../settings/settings.js'; // Keep UI functions
 
 // DOM Elements
 const elements = {
@@ -12,13 +12,7 @@ const elements = {
 
 // Initialize settings
 function initialize() {
-    // try { // Remove this block
-    //     // Initialize settings on first load
-    //     initSettings();
-    // } catch (error) {
-    //     console.warn('设置初始化失败，但应用会继续运行:', error);
-    // }
-
+ 
     // --- SettingsService initializes automatically on import ---
     console.log("Utils/Index: Initializing event listeners.");
 
@@ -52,11 +46,11 @@ function setupEventListeners() {
 
     // Navigation buttons
     elements.chatBtn.addEventListener('click', () => {
-        navigateTo('../pages/chat.html');
+        checkApiSettingsAndNavigate('chat');
     });
 
     elements.callBtn.addEventListener('click', () => {
-        navigateTo('../pages/call.html');
+        checkApiSettingsAndNavigate('call');
     });
 
     elements.recordBtn.addEventListener('click', () => {
@@ -83,8 +77,45 @@ function navigateTo(path) {
     try {
         window.location.href = path;
     } catch (error) {
-        console.error('Navigation failed:', error);
-        alert('Failed to navigate to the selected page');
+        console.error('导航失败:', error);
+        alert('无法导航到所选页面');
+    }
+}
+
+// Check API settings before navigating
+function checkApiSettingsAndNavigate(pageType) {
+    const settings = settingsService.getSettings();
+    let apiKeyMissing = false;
+    let missingApiType = "";
+    let destinationPath = "";
+
+    if (pageType === 'chat') {
+        destinationPath = '../pages/chat.html';
+        if (settings.useDomesticAPI) {
+            if (!settings.domesticApiKey) {
+                apiKeyMissing = true;
+                missingApiType = "国内API (ECNU)";
+            }
+        } else {
+            if (!settings.apiKey) {
+                apiKeyMissing = true;
+                missingApiType = "Gemini API";
+            }
+        }
+    } else if (pageType === 'call') {
+        destinationPath = '../pages/call.html';
+        // Call page typically uses Gemini API for voice features
+        if (!settings.apiKey) {
+            apiKeyMissing = true;
+            missingApiType = "Gemini API";
+        }
+    }
+
+    if (apiKeyMissing) {
+        alert(`请先在设置中配置 ${missingApiType} 密钥，然后才能使用此功能。您可以点击主页右上角的齿轮图标进行设置。`);
+        openSettingsModal();
+    } else {
+        navigateTo(destinationPath);
     }
 }
 

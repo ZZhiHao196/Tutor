@@ -8,14 +8,12 @@ export const getWebsocketUrl = () => {
 
 // Audio configuration
 export const AUDIO_CONFIG = {
-    sampleRate: 16000, // Standard sampling rate, suitable for most speech models
-    silenceThreshold: 0.01, // Silence detection threshold
-    silenceDuration: 1500, // Silence duration (ms), used to determine if user has stopped speaking
+    get sampleRate() { return settingsService.getSetting('sampleRate', 22000); }, 
     maxRecordingDuration: 60000, // Maximum recording duration (ms)
 };
 
 // Audio sampling rate - ensure it matches model requirements
-export const MODEL_SAMPLE_RATE = 16000; // Set to 16kHz, suitable for speech processing
+export const MODEL_SAMPLE_RATE = settingsService.getSetting('sampleRate', 22000); 
 
 const thresholds = {
     0: "BLOCK_NONE",
@@ -138,12 +136,10 @@ export const getConfig = (options = {}) => { // Add options parameter
             config.generation_config = {};
         }
         // Get voice type from settings or use default voice
-        const voiceType = settingsService.getSetting('voiceType') || 'Aoede'; 
+        const voiceType = settingsService.getSetting('voiceType') || 'Aoede';
+        console.log(`[!!! CONFIG !!!] Using voiceType: "${voiceType}" for Gemini Live Agent speech_config.`);
         
-        // Live API需要在generation_config下添加response_modalities
         config.generation_config.response_modalities = ["AUDIO"];
-        
-        // 使用Gemini Live API文档中的正确speech_config结构
         config.generation_config.speech_config = {
             "voice_config": {
                 "prebuilt_voice_config": {
@@ -169,7 +165,7 @@ const DEFAULT_SETTINGS = {
     modelType: 'gemini-2.0-flash-live-001', // 使用最新支持Live API的模型
     temperature: 0.7,
     maxTokens: 1024,
-    voiceSpeed: 1.2,
+    voiceSpeed: 1.1,
     topP: 0.95,
     topK: 40,
     systemInstructions: 'You are a helpful English tutor. Help the user practice English conversation.',

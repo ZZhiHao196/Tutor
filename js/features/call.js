@@ -24,9 +24,9 @@ const elements = {
 };
 
 // Voice activity detection constants
-const SILENCE_THRESHOLD = 2; // 0.5 seconds of silence to consider speech ended
-const SPEECH_MIN_DURATION = 500; // At least 0.5 seconds of speech to be considered valid input
-const LONG_SILENCE_DURATION = 30000; // 25 seconds of silence triggers AI check-in
+// const SILENCE_THRESHOLD = 2; // 0.5 seconds of silence to consider speech ended // REMOVED
+// const SPEECH_MIN_DURATION = 500; // At least 0.5 seconds of speech to be considered valid input // REMOVED
+// const LONG_SILENCE_DURATION = 30000; // 25 seconds of silence triggers AI check-in // REMOVED
 
 // Session duration constants
 const MIN_DURATION_TO_RECOMMEND_SAVE = 60000; // 60 seconds - Recommend saving if duration exceeds this
@@ -41,7 +41,7 @@ const state = {
     isListening: false,
     isCallActive: false,
     initialPromptSent: false,
-    longSilenceTimeout: null,
+    // longSilenceTimeout: null, // REMOVED
     aiAudioSourceConnected: false,
     _keepAliveNodes: null, // Use an object to store nodes
     _sendingAudioToAgent: true, // Added for the new stopListening implementation
@@ -55,10 +55,11 @@ const state = {
     statusMessageElement: null, // System message element
     
     // Speech related states - Still needed for speech detection, but no longer used for counting
-    isSpeaking: false,
-    speechStarted: false,
-    utteranceTimeout: null,
+    // isSpeaking: false, // REMOVED
+    // speechStarted: false, // REMOVED
+    // utteranceTimeout: null, // REMOVED
     aiResponding: false,
+    // speechStartTime: null, // REMOVED
 };
 
 // ------------------------
@@ -89,8 +90,6 @@ function updateSessionDuration() {
 function debugLogState(location) {
     console.log(`
 ---- DEBUG STATE [${location}] ----
-isSpeaking: ${state.isSpeaking}
-speechStarted: ${state.speechStarted}
 sessionDuration: ${Math.floor(state.sessionDuration / 1000)} seconds
 isListening: ${state.isListening}
 aiResponding: ${state.aiResponding}
@@ -98,54 +97,8 @@ aiResponding: ${state.aiResponding}
 `);
 }
 
-// Reset the utterance timeout and consider speech ended after silence
-function resetUtteranceTimeout() {
-    // Clear any existing timeout
-    if (state.utteranceTimeout) {
-        console.log("[Speech Monitoring] Clearing existing speech timeout timer");
-        clearTimeout(state.utteranceTimeout);
-        state.utteranceTimeout = null;
-    }
-    
-    // Only set a new timeout if the user is currently speaking
-    if (state.isSpeaking) {
-        console.log("[Speech Monitoring] User is speaking, starting new speech timeout timer");
-        console.log("[Debug] Current state - speechStarted:", state.speechStarted);
-        debugLogState("resetUtteranceTimeout-start");
-        
-        state.utteranceTimeout = setTimeout(() => {
-            console.log("[Speech Monitoring] Speech timeout timer triggered - silence exceeded threshold", SILENCE_THRESHOLD, "ms");
-            debugLogState("silenceTimer-callback-start");
-            
-            // If we were speaking and now detect silence, mark that the user has spoken
-            if (state.speechStarted) {
-                console.log("[Speech Monitoring] User speech end detected, waiting for AI response");
-                
-                // Check if speech duration is long enough
-                const speechDuration = state.speechStartTime ? (Date.now() - state.speechStartTime) : 0;
-                console.log(`[Speech Monitoring] Speech duration: ${speechDuration}ms (minimum valid duration: ${SPEECH_MIN_DURATION}ms)`);
-                
-                // Speech duration is sufficient but no longer counting turns, just update session duration
-                if (speechDuration >= SPEECH_MIN_DURATION) {
-                    updateSessionDuration();
-                } else {
-                    console.log("[Speech Monitoring] Speech duration too short, not considered valid speech");
-                }
-                
-                // Reset speech state
-                state.speechStarted = false;
-                state.speechStartTime = null;
-            } else {
-                console.log("[Speech Monitoring] Speech ended but not counted as valid speech (speechStarted=false)");
-            }
-            state.isSpeaking = false;
-            console.log("[Speech Monitoring] User speech state updated to: not speaking");
-            debugLogState("silenceTimer-callback-end");
-        }, SILENCE_THRESHOLD);
-    } else {
-        console.log("[Speech Monitoring] User not speaking, not setting new speech timeout timer");
-    }
-}
+// Reset the utterance timeout and consider speech ended after silence // REMOVED ENTIRE FUNCTION
+// function resetUtteranceTimeout() { ... }
 
 // ------------------------
 // 3. AUDIO SYSTEM INITIALIZATION
@@ -157,8 +110,8 @@ async function initializeAudioSystem() {
         
         // 1. Create AudioContext
         if (!state.audioContext) {
-            state.audioContext = new AudioContext({ sampleRate: MODEL_SAMPLE_RATE });
-            console.log(`AudioContext created. Initial state: ${state.audioContext.state}`);
+            state.audioContext = new AudioContext({ sampleRate: 22000 }); // Use 22k directly
+            console.log(`AudioContext created with 24kHz sample rate. Initial state: ${state.audioContext.state}`);
             
             // --- Add State Change Listener ---
             state.audioContext.onstatechange = () => {
@@ -226,9 +179,9 @@ async function initializeAudioSystem() {
         // 5. Create AudioRecorder with the shared AudioContext
         if (!state.audioRecorder) { // Avoid recreating if already initialized
             state.audioRecorder = new AudioRecorder({
-                vadEnabled: true,
-                silenceThreshold: 0.01,
-                silenceDuration: SILENCE_THRESHOLD,
+                // vadEnabled: true, // REMOVED
+                // silenceThreshold: 0.01, // REMOVED (default in AudioRecorder might apply if not set here)
+                // silenceDuration: SILENCE_THRESHOLD, // REMOVED
                 autoGainEnabled: true,
                 audioContext: state.audioContext // Pass the shared context
             });
@@ -260,18 +213,38 @@ async function initializeAudioSystem() {
 async function initializeAgent() {
     try {
         // 1. Get settings and websocket URL
-        // state.settings = settingsService.getSettings(); // Settings are fetched within getConfig now
-        const wsUrl = getWebsocketUrl(); // This remains unchanged as it points to Gemini WS
+        const wsUrl = getWebsocketUrl();
         if (!wsUrl) {
             throw new Error("WebSocket URL not configured");
         }
         
-        // 2. Create the agent with proper configuration structure
-        // Force Gemini configuration for the call agent
         const agentConfig = getConfig({ forceGemini: true }); 
-        console.log("[Call Init] Agent config forced for Gemini:", agentConfig);
+        agentConfig.model = 'models/gemini-2.0-flash-live-001';
+        console.log("[Call Init] Using model: " + agentConfig.model);
 
-        // 检查当前使用的模型并通知用户
+        const voiceType = settingsService.getSetting('voiceType') || 'Aoede';
+        console.log(`[!!! CONFIG !!!] Using voiceType: "${voiceType}" for Gemini Live Agent speech_config.`);
+
+        if (!agentConfig.generation_config) agentConfig.generation_config = {};
+        if (!agentConfig.generation_config.speech_config) {
+            agentConfig.generation_config.speech_config = { voice_config: { prebuilt_voice_config: {} }, language_code: "en-US" };
+        }
+        if (!agentConfig.generation_config.speech_config.voice_config) {
+            agentConfig.generation_config.speech_config.voice_config = { prebuilt_voice_config: {} };
+        }
+        if (!agentConfig.generation_config.speech_config.voice_config.prebuilt_voice_config) {
+            agentConfig.generation_config.speech_config.voice_config.prebuilt_voice_config = {};
+        }
+
+        agentConfig.generation_config.speech_config.voice_config.prebuilt_voice_config.voice_name = voiceType;
+        agentConfig.generation_config.speech_config.voice_config.prebuilt_voice_config.speaking_rate = settingsService.getSetting('speakingRate');
+        // agentConfig.generation_config.speech_config.voice_config.prebuilt_voice_config.pitch = settingsService.getSetting('pitch'); // REMOVED pitch
+        
+        agentConfig.generation_config.response_modalities = ["AUDIO"];
+        delete agentConfig.synthesize_speech_config;
+        
+        // console.log("[Call Init] Final agent config for call:", JSON.stringify(agentConfig, null, 2));
+
         const currentModel = agentConfig.model?.replace('models/', '') || 'gemini-2.0-flash-exp';
         const originalModel = settingsService.getSetting('modelType');
         
@@ -281,18 +254,43 @@ async function initializeAgent() {
             appendSystemMessage(`注意: 语音通话使用 ${currentModel} 模型 (${originalModel} 不支持语音通话)。`, "warning");
         }
 
+        // Ensure audioContext is ready from initializeAudioSystem
+        if (!state.audioContext || state.audioContext.state !== 'running') {
+            console.error("[Call Init] Main AudioContext is not available or not running. Cannot initialize agent requiring it.");
+            appendSystemMessage("关键音频组件失败，请刷新页面。", "error");
+            throw new Error("Main AudioContext for agent is not ready.");
+        }
+
         state.geminiAgent = new GeminiAgent({
             url: wsUrl,
-            config: agentConfig, // Use the forced Gemini config
+            config: agentConfig,
             autoConnect: false,
-            modelSampleRate: MODEL_SAMPLE_RATE,
+            modelSampleRate: 22000, // 
             name: 'GeminiAgent (Call)'
-        });
+        }, state.audioContext);
         
         // 3. Setup event handlers
         state.geminiAgent.on('connected', () => {
             console.log("Agent connection established");
             elements.micButton.disabled = false;
+
+            // Connect AudioStreamer output to the main AudioContext destination
+            if (state.audioContext && state.audioContext.state === 'running') {
+                const agentAudioOutput = state.geminiAgent.getAudioOutputNode();
+                if (agentAudioOutput) {
+                    try {
+                        agentAudioOutput.connect(state.audioContext.destination);
+                        console.log("[Call Init] Connected GeminiAgent's AudioStreamer output to main AudioContext destination."); // Keep - important connection log
+                    } catch (e) {
+                        console.error("[Call Init] Error connecting agent audio output:", e);
+                    }
+                } else {
+                    console.warn("[Call Init] GeminiAgent's audio output node not available to connect.");
+                }
+            } else {
+                console.warn("[Call Init] Main AudioContext not ready, cannot connect agent audio output yet.");
+                // Optionally, re-attempt connection if audioContext becomes ready later
+            }
         });
         
         state.geminiAgent.on('disconnected', () => {
@@ -309,87 +307,22 @@ async function initializeAgent() {
             elements.micButton.disabled = true;
         });
         
-        // Handle incoming audio
-        state.geminiAgent.on('audio', (audioBase64) => {
-            console.log("[Audio Event] Received AI audio response");
-            debugLogState("receivedAiAudio");
-            
-            // Set AI face to responding state
-            elements.aiFace.classList.add('ai-responding');
-            state.aiResponding = true;
-            
-            // Play the audio
-            const audioBlob = base64ToBlob(audioBase64, 'audio/ogg');
-            const audioUrl = URL.createObjectURL(audioBlob);
-            
-            console.log("Setting audio source and playing...");
-            elements.aiAudioElement.src = audioUrl;
-            elements.aiAudioElement.play().catch(e => {
-                console.error("Error playing AI audio:", e);
-                
-                // Revert AI face if playback fails
-                elements.aiFace.classList.remove('ai-responding');
-                state.aiResponding = false;
-            });
-            
-            // Reset silence timer
-            startLongSilenceTimer();
-        });
-        
         // Handle text messages
         state.geminiAgent.on('text', (text) => {
-            console.log("Received text from agent:", text);
-            startLongSilenceTimer();
+            console.log("Received text from agent:", text); // Keep - shows AI text response
+            // POTENTIAL PLACE TO TRIGGER 'AI IS RESPONDING' UI
+            elements.aiFace.classList.add('ai-responding');
+            state.aiResponding = true;
         });
         
         // Handle turn completion
         state.geminiAgent.on('turn_complete', () => {
-            console.log("Agent turn complete");
+            console.log("Agent turn complete"); // Keep - important state
+            elements.aiFace.classList.remove('ai-responding'); // UI Reset
+            state.aiResponding = false;                       // State Reset
             // Ensure visualizer exists before calling
             // if (state.visualizer) state.visualizer.visualizeIdle(); 
-            startLongSilenceTimer();
         });
-        
-        // --- Add Event Listeners for AI Audio Playback --- 
-        elements.aiAudioElement.addEventListener('play', () => {
-            console.log("[Debug] AI audio playback started");
-            console.log('AudioContext state:', state.audioContext?.state); // Check context state
-            
-            // Update AI face - ensure response animation is applied
-            elements.aiFace.classList.add('ai-responding');
-            state.aiResponding = true;
-        });
-        
-        const onPlaybackEnd = () => {
-            console.log("[Audio Event] AI audio playback ended");
-            debugLogState("aiAudioPlaybackEnd-start");
-            
-            // Update AI face - remove response animation
-            elements.aiFace.classList.remove('ai-responding');
-            state.aiResponding = false;
-            
-            // If mic is on, return to listening state
-            if (state.isListening) {
-                elements.aiFace.classList.add('listening');
-            }
-            
-            // Update session duration
-            updateSessionDuration();
-        };
-        
-        elements.aiAudioElement.addEventListener('ended', onPlaybackEnd);
-        elements.aiAudioElement.addEventListener('pause', onPlaybackEnd);
-        elements.aiAudioElement.addEventListener('error', (e) => {
-            console.error("[Debug] Audio playback error:", e);
-            onPlaybackEnd(); // Still call the end handler to clean up state
-        });
-        
-        // Add a direct event handler to track any user interactions with the audio element
-        elements.aiAudioElement.addEventListener('timeupdate', () => {
-            // This will fire periodically during playback
-            console.log("[Debug] Audio playback progress:", elements.aiAudioElement.currentTime);
-        });
-        // --- End Event Listeners --- 
         
         // 4. Connect to the agent
         console.log("Connecting to agent...");
@@ -448,6 +381,17 @@ async function startListening() {
     }
     // --- End Check ---
 
+    // --- INTERRUPT AI SPEECH IF IT'S RESPONDING ---
+    if (state.aiResponding && state.geminiAgent) {
+        console.log("[startListening] AI is responding, attempting to interrupt...");
+        state.geminiAgent.interruptSpeech();
+        elements.aiFace.classList.remove('ai-responding'); // Reset AI face UI
+        state.aiResponding = false;                       // Reset AI responding state
+        // Optionally, add a small delay for the interruption to take full effect
+        // await new Promise(resolve => setTimeout(resolve, 100)); 
+    }
+    // --- END AI SPEECH INTERRUPTION ---
+
     try {
         elements.micButton.disabled = true; // Prevent multiple clicks
         
@@ -460,50 +404,17 @@ async function startListening() {
         // --- Add specific logging for recorder start ---
         console.log("startListening: Attempting to call state.audioRecorder.start()...");
         
-        // Reset speech tracking state
-        state.isSpeaking = false;
-        state.speechStarted = false;
+        // Reset speech tracking state // REMOVED
+        // state.isSpeaking = false;
+        // state.speechStarted = false;
         
         // Check if the recorder is already running and just need to re-enable sending
         if (state.audioRecorder && state.audioRecorder.isRecording) {
             console.log("Recorder already running, re-enabling audio data flow");
             state._sendingAudioToAgent = true;
         } else {
-            // Make sure we only add event listeners once
-            if (!state.audioRecorder.hasAddedSpeechEventListeners) {
-                console.log("[Speech Monitoring] Adding speech event listeners");
-                // Add event listeners for speech detection
-                state.audioRecorder.addEventListener('speechstart', () => {
-                    console.log("[Speech Monitoring] Event triggered - Speech started (speechstart)");
-                    
-                    // Set speech start state
-                    state.isSpeaking = true;
-                    console.log("[Speech Monitoring] User speech state updated to: speaking");
-                    
-                    // Record speech start time
-                    state.speechStartTime = Date.now();
-                    
-                    if (!state.speechStarted) {
-                        console.log("[Speech Monitoring] New speech segment started");
-                        state.speechStarted = true;
-                    } else {
-                        console.log("[Speech Monitoring] Continuing existing speech segment");
-                    }
-                    debugLogState("speechStartEvent-complete");
-                    resetUtteranceTimeout();
-                });
-                
-                state.audioRecorder.addEventListener('speechend', () => {
-                    console.log("[Speech Monitoring] Event triggered - Speech paused (speechend)");
-                    console.log("[Speech Monitoring] Speech paused - Starting silence timer, if continues for", SILENCE_THRESHOLD, "ms it will be considered a segment end");
-                    debugLogState("speechEndEvent-start");
-                    resetUtteranceTimeout();
-                    debugLogState("speechEndEvent-complete");
-                });
-                
-                state.audioRecorder.hasAddedSpeechEventListeners = true;
-                console.log("[Speech Monitoring] Speech event listeners added, hasAddedSpeechEventListeners=true");
-            }
+            // Make sure we only add event listeners once // REMOVED SPEECH EVENT LISTENERS
+            // if (!state.audioRecorder.hasAddedSpeechEventListeners) { ... }
             
             // Start the recorder with audio data callback
             await state.audioRecorder.start((audioData) => {
@@ -513,51 +424,12 @@ async function startListening() {
                     state.geminiAgent.getConnectionStatus && 
                     state.geminiAgent.getConnectionStatus()) {
                     
-                    // Manual speech detection as backup method
-                    // If the recorder provides energy/volume data, we can use it
-                    if (audioData && 'energy' in audioData) {
-                        const isAudible = audioData.energy > 0.005; // Lowered from 0.01 to 0.005 to increase sensitivity
-                        
-                        // If we detect speech but the event hasn't fired
-                        if (isAudible && !state.isSpeaking) {
-                            console.log("[Speech Monitoring] Manually detected speech activity (energy:", audioData.energy, ")");
-                            state.isSpeaking = true;
-                            
-                            // Record speech start time
-                            if (!state.speechStartTime) {
-                                state.speechStartTime = Date.now();
-                                console.log("[Speech Monitoring] Manually set speech start time:", new Date(state.speechStartTime).toISOString().substring(11, 23));
-                            }
-                            
-                            if (!state.speechStarted) {
-                                console.log("[Speech Monitoring] Manual detection: New speech segment started");
-                                state.speechStarted = true;
-                                debugLogState("manualSpeechDetection-startSpeaking");
-                            }
-                            
-                            resetUtteranceTimeout();
-                        }
-                        // If we detect silence but were speaking
-                        else if (!isAudible && state.isSpeaking) {
-                            console.log("[Speech Monitoring] Manually detected speech stop (energy:", audioData.energy, ")");
-                            debugLogState("manualSpeechDetection-stopSpeaking");
-                            resetUtteranceTimeout(); // This will start the silence timer
-                        }
-                    }
+                    // Manual speech detection as backup method // REMOVED
+                    // if (audioData && 'energy' in audioData) { ... }
                     
                     // Send the audio without incrementing turn count
-                    state.geminiAgent.sendAudio(audioData).then(sent => {
-                        if (sent) {
-                            // Reset utterance timeout when audio is sent
-                            if (state.isSpeaking) {
-                                console.log("[Speech Monitoring] Audio sent successfully, resetting speech timeout timer");
-                                resetUtteranceTimeout();
-                            } else {
-                                console.log("[Speech Monitoring] Audio sent successfully, but user not in speaking state");
-                            }
-                        }
-                    }).catch(err => {
-                        console.error("[Speech Monitoring] Error sending audio:", err);
+                    state.geminiAgent.sendAudio(audioData).catch(err => { // Simplified sendAudio call
+                        console.error("[Audio Send] Error sending audio:", err);
                     });
                 }
             });
@@ -585,7 +457,7 @@ async function startListening() {
         state.isListening = true;
         console.log("User listening started successfully");
 
-        startLongSilenceTimer(); // Start the timer as soon as listening begins
+        // startLongSilenceTimer(); // REMOVED
     } catch (error) {
         console.error("Error starting listening:", error);
         appendSystemMessage(`启动麦克风错误: ${error.message}`);
@@ -616,19 +488,15 @@ async function stopListening() {
         elements.micButton.classList.remove('on'); // Remove 'on' class to return to red color
         elements.aiFace.classList.remove('listening'); // Remove listening animation from face
         
-        // Clear utterance timeout if active
-        if (state.utteranceTimeout) {
-            console.log("[Speech Monitoring] Stopping microphone - Clearing speech timeout timer");
-            clearTimeout(state.utteranceTimeout);
-            state.utteranceTimeout = null;
-        }
+        // Clear utterance timeout if active // REMOVED
+        // if (state.utteranceTimeout) { ... }
         
         // Update session duration when stopping mic
         updateSessionDuration();
         
-        state.isSpeaking = false;
-        state.speechStarted = false;
-        console.log("[Speech Monitoring] User speech state reset to: not speaking");
+        // state.isSpeaking = false; // REMOVED
+        // state.speechStarted = false; // REMOVED
+        // console.log("[Speech Monitoring] User speech state reset to: not speaking"); // REMOVED
         
         // Instead of stopping the recorder completely, we'll keep it running
         // but set a flag to ignore its output
@@ -650,8 +518,8 @@ async function stopListening() {
             }
         }
         
-        // Reset long silence timer
-        clearLongSilenceTimer();
+        // Reset long silence timer // REMOVED
+        // clearLongSilenceTimer();
         
         // Update state
         state.isListening = false;
@@ -666,70 +534,21 @@ async function stopListening() {
 }
 
 // ------------------------
-// 6. SILENCE HANDLING
+// 6. SILENCE HANDLING // REMOVED SECTION
 // ------------------------
-function clearLongSilenceTimer() {
-    if (state.longSilenceTimeout) {
-        clearTimeout(state.longSilenceTimeout);
-        state.longSilenceTimeout = null;
-    }
-}
-
-function startLongSilenceTimer() {
-    clearLongSilenceTimer();
-    
-    // Only start timer if we are actively listening for user input
-    // or if the AI is not currently speaking (i.e., call is active but idle)
-    if (state.isCallActive && (state.isListening || elements.aiAudioElement.paused)) {
-        console.log(`Starting long silence timer (${LONG_SILENCE_DURATION}ms)`);
-        state.longSilenceTimeout = setTimeout(handleLongSilence, LONG_SILENCE_DURATION);
-    } else {
-        console.log("Not starting long silence timer (AI speaking or call inactive).");
-    }
-}
-
-async function handleLongSilence() {
-    console.log("Long silence detected");
-    state.longSilenceTimeout = null; // Clear the timeout reference
-
-    // Check if we're still in a valid state for a check-in
-    // We should only check-in if the user mic is currently supposed to be listening.
-    const wasListening = state.isListening;
-    if (wasListening && state.geminiAgent && state.geminiAgent.getConnectionStatus() && elements.aiAudioElement.paused) {
-        try {
-            console.log("AI checking in due to prolonged silence (mic remains on)...");
-            appendSystemMessage("您还在吗？（麦克风仍在开启状态）"); // Inform user
-            
-            // Send the check-in text message, but DO NOT stop listening.
-            await state.geminiAgent.sendText("Are you still there?");
-            
-        } catch (error) {
-            console.error("Failed during silence check-in:", error);
-            appendSystemMessage("静默检查期间出错。麦克风可能无响应。");
-            // Don't automatically stop listening here either, as it might trigger the original bug.
-            // User might need to manually toggle or refresh.
-        }
-    } else {
-        console.log("Long silence detected but not checking in (wasListening:", wasListening, 
-                    "agentConnected:", !!state.geminiAgent?.getConnectionStatus(), 
-                    "aiSpeaking:", !elements.aiAudioElement.paused, ")");
-        // If silence detected but we weren't listening or AI was speaking,
-        // restart the timer if appropriate (call active, user not listening, AI not speaking).
-        if (state.isCallActive && !state.isListening && elements.aiAudioElement.paused) {
-             startLongSilenceTimer();
-        }
-    }
-}
+// function clearLongSilenceTimer() { ... } // REMOVED
+// function startLongSilenceTimer() { ... } // REMOVED
+// async function handleLongSilence() { ... } // REMOVED
 
 // ------------------------
-// 7. MODAL & USER INTERACTION HANDLERS
+// 7. MODAL & USER INTERACTION HANDLERS (Adjusted section number)
 // ------------------------
 
 // --- Add Cleanup and Exit Function ---
 async function performCleanupAndExit() {
     console.log("[Exit] Performing cleanup and exiting call...");
     hideSaveModal(); // Ensure modal is hidden
-    clearLongSilenceTimer();
+    // clearLongSilenceTimer(); // REMOVED
 
     // Stop listening if active
     if (state.isListening) {
@@ -906,7 +725,7 @@ async function saveCallSession() {
 
 async function handleReturn() {
     console.log("[Return Click] Return button clicked. isCallActive:", state.isCallActive);
-    clearLongSilenceTimer();
+    // clearLongSilenceTimer(); // REMOVED
 
     // Update session duration
     updateSessionDuration();
@@ -990,6 +809,72 @@ async function initializeCallSystem() {
         state.lastDurationUpdate = Date.now();
         console.log("[Init] Call system initialized successfully. isCallActive:", state.isCallActive);
         appendSystemMessage("系统已就绪。点击麦克风开始。"); // Update message on success
+
+        // Add settings listener to update playback rate if voiceSpeed changes
+        settingsService.addListener(async (change) => {
+            if (change.key === 'voiceSpeed') {
+                console.log(`[Settings Listener - Call] Voice speed changed to: ${change.value}`);
+                if (state.geminiAgent) { 
+                    state.geminiAgent.setPlaybackRate(change.value);
+                } else { 
+                    // elements.aiAudioElement.playbackRate = change.value; // aiAudioElement no longer primary for AI audio
+                }
+            } else if (change.key === 'voiceType' || change.key === 'modelType') {
+                // Only re-initialize if the call is active, to prevent issues if settings are changed while not on the call page
+                if (state.isCallActive) {
+                    console.log(`[Settings Listener - Call] ${change.key} changed to: ${change.value}. Re-initializing agent for call.`); // Keep - important event
+                    appendSystemMessage("语音设置已更改，正在重新连接服务...", "info");
+                    
+                    // Disconnect existing agent and clear it
+                    if (state.geminiAgent) {
+                        if (state.geminiAgent.getConnectionStatus()) {
+                            await state.geminiAgent.disconnect();
+                        }
+                        state.geminiAgent = null; // Nullify to allow re-creation
+                    }
+                    
+                    // Attempt to re-initialize the agent part of the call system
+                    // This assumes initializeAgent can be called again safely
+                    try {
+                        const agentReinitialized = await initializeAgent();
+                        if (agentReinitialized) {
+                            // Re-apply voice speed to the new agent instance
+                            if (state.geminiAgent) {
+                                const voiceSpeed = settingsService.getSetting('voiceSpeed', 1.1);
+                                state.geminiAgent.setPlaybackRate(voiceSpeed);
+                                // console.log(`[Settings Listener - Call] Applied voice speed ${voiceSpeed} to new agent.`); // Can be commented out
+                            }
+                            appendSystemMessage("服务已更新并重新连接。", "success");
+                            // If mic was on, user might need to toggle it again, or we could try to restart listening.
+                            // For simplicity, let user re-toggle mic if needed after settings change.
+                            if(state.isListening) {
+                                await stopListening(); // Stop listening, user can restart
+                                elements.micButton.classList.remove('active', 'on');
+                                elements.aiFace.classList.remove('listening');
+                                appendSystemMessage("请重新点击麦克风继续。", "info");
+                            }
+                        } else {
+                            appendSystemMessage("重新连接服务失败。请检查设置或刷新。", "error");
+                            elements.micButton.disabled = true; // Disable mic if re-init fails
+                        }
+                    } catch (error) {
+                        console.error("[Settings Listener - Call] Error re-initializing agent:", error);
+                        appendSystemMessage("重新连接服务时出错。", "error");
+                        elements.micButton.disabled = true;
+                    }
+                } else {
+                    console.log(`[Settings Listener - Call] ${change.key} changed, but call is not active. No re-initialization.`);
+                }
+            }
+        });
+
+        // Initialize playback rate on the agent
+        if (state.geminiAgent) {
+            const initialVoiceSpeed = settingsService.getSetting('voiceSpeed', 1.1);
+            state.geminiAgent.setPlaybackRate(initialVoiceSpeed);
+            // console.log(`[Init] Set initial GeminiAgent playbackRate to: ${initialVoiceSpeed}`); // Can be commented out
+        }
+        
         return true;
         
     } catch (error) {
@@ -1094,4 +979,3 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // For potential use by other modules
 export { initializeCallSystem, startListening, stopListening };
-

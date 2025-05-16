@@ -34,6 +34,7 @@ const state = {
     messagePlaybacks: {}, // Track playback counts for messages by ID
     audioPlayingTimestamp: null, // Added for audio playback state tracking
     workerAudioFailed: false, // Tracks if Worker TTS has failed and we should use browser TTS
+    sharedAudioContext: null, // ADDED: For shared Web Audio API context
 };
 
 // first hide status indicator
@@ -76,38 +77,46 @@ function checkAudioFormatSupport() {
 async function getAudioForText(text) {
     // If audio is disabled, don't proceed
     if (!state.isAudioEnabled || !elements.aiAudioElement) {
-        console.warn("Audio playback is disabled or audio element not found");
+        console.warn("[Chat.js - getAudioForText] Audio playback is disabled or audio element not found");
         return null;
     }
     
     try {
         const preparedText = prepareTextForSpeech(text);
-        console.log(`[getAudioForText] Requesting TTS from Cloudflare Worker for text: "${preparedText.substring(0, 70)}${preparedText.length > 70 ? "..." : ""}"`);
+        console.log(`[Chat.js - getAudioForText] Requesting TTS for: "${preparedText.substring(0, 70)}${preparedText.length > 70 ? "..." : ""}"`);
 
         // Reset audio playing state if it's been stuck for more than 30 seconds
         const now = Date.now();
         if (state.audioPlayingTimestamp && (now - state.audioPlayingTimestamp > 30000)) {
-            console.warn("[getAudioForText] Audio playing state was stuck for more than 30 seconds, resetting");
+            console.warn("[Chat.js - getAudioForText] Audio playing state was stuck, resetting.");
             state.audioPlaying = false;
+            state.audioPlayingTimestamp = null;
         }
         
-        // Quick check for domestic model - directly use browser TTS 
-        if (state.apiType === 'domestic') {
-            console.log("[getAudioForText] Using browser speech synthesis directly for domestic model");
+        // PRIORITY: Use Gemini Live Agent if available and connected
+        if (state.apiType === 'gemini' && state.geminiVoiceAgent && state.geminiVoiceAgent.getConnectionStatus()) {
+            console.log("[Chat.js - getAudioForText] Using Gemini Live Agent for TTS.");
+            state.audioPlayingTimestamp = now; // Mark that we are initiating playback
+            state.audioPlaying = true; // Set before sending text, reset on turn_complete or error by agent
+            await state.geminiVoiceAgent.sendText(preparedText);
+            // Audio will be played by the AudioStreamer connected to the shared AudioContext.
+            // UI updates for .is-playing should be handled by 'text' and 'turn_complete' from this agent.
+            return true; // Indicates TTS process initiated successfully
+        }
+
+        // Fallback conditions for custom worker or browser TTS
+        if (state.apiType === 'domestic' || 
+            state.workerAudioFailed === true) {
+            console.log("[Chat.js - getAudioForText] Using browser speech synthesis (domestic API or worker failed).");
             return generateSpeechWithBrowser(preparedText);
         }
         
-        // Check if we've previously determined the browser can't play the worker audio
-        if (state.workerAudioFailed === true) {
-            console.log("[getAudioForText] Using browser TTS due to previous worker audio failures");
-            return generateSpeechWithBrowser(preparedText);
-        }
-        
-        // Record timestamp when we set audioPlaying to true
+        // Record timestamp when we set audioPlaying to true for worker path
         state.audioPlayingTimestamp = now;
 
-        // Determine the worker endpoint
-        let workerAudioUrl = '/audio'; // Default if no proxy URL
+        // CUSTOM WORKER TTS LOGIC (remains as fallback if Gemini Live Agent is not used/available)
+        console.log("[Chat.js - getAudioForText] Attempting TTS via custom worker.");
+        let workerAudioUrl = '/audio'; 
         if (state.settings && state.settings.chatApiProxyUrl) {
             // Ensure no double slashes if proxyUrl ends with / and endpoint starts with /
             const baseUrl = state.settings.chatApiProxyUrl.replace(/\/?$/, '');
@@ -137,7 +146,7 @@ async function getAudioForText(text) {
 
         const requestBody = {
             text: preparedText,
-            voice: voiceSetting, // e.g., 'Aoede', 'Puck' - must match worker's voiceMap keys
+            voice: voiceSetting, // 'Aoede' is sent to the worker
             speakingRate: speakingRateSetting,
             audioFormat: audioFormat // Add the audio format parameter
         };
@@ -165,6 +174,7 @@ async function getAudioForText(text) {
             // Fallback to browser TTS if worker fails
             console.warn("[getAudioForText] TTS worker request failed. Falling back to browser synthesis.");
             state.audioPlaying = false; // Reset state before fallback
+            state.workerAudioFailed = true; // 标记worker语音失败
             return generateSpeechWithBrowser(preparedText);
         }
 
@@ -420,11 +430,8 @@ async function playTextAsAudio(text, messageId = null) {
     }
 
     try {
-        // Ensure text is always prepared for speech - this is a safeguard
-        // in case the text wasn't already prepared by the caller
-        const speechText = (typeof text === 'string' && text === text.trim()) 
-            ? prepareTextForSpeech(text) 
-            : text;
+        // The 'text' argument should ideally be the already-prepared speechText.
+        const speechText = text; // Assume 'text' is already prepared by the caller.
             
         console.log("Getting audio for text:", speechText.slice(0, 50) + (speechText.length > 50 ? "..." : ""));
         
@@ -514,8 +521,9 @@ function prepareTextForSpeech(text) {
     
     // Remove markdown formatting
     let plainText = text
-        // Remove code blocks
-        .replace(/```[\s\S]*?```/g, 'code block')
+        // Remove code blocks (```code```) - keep the content
+        .replace(/```[a-zA-Z]*\n([\s\S]*?)```/g, '$1') // Handles language-specific blocks
+        .replace(/```([\s\S]*?)```/g, '$1') // Handles generic blocks
         // Remove inline code
         .replace(/`([^`]+)`/g, '$1')
         // Remove bold
@@ -530,8 +538,8 @@ function prepareTextForSpeech(text) {
         .replace(/^\s*\d+\.\s+(.*$)/gm, '$1')
         // Remove links
         .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-        // Remove tables
-        .replace(/\|.*\|/g, 'table content')
+        // Process tables - replace pipe characters with spaces to preserve text
+        .replace(/\|/g, ' ')
         // Remove horizontal rules
         .replace(/^-{3,}$/gm, '')
         // Remove blockquotes
@@ -540,7 +548,7 @@ function prepareTextForSpeech(text) {
     // Remove any HTML tags that might have been introduced
     plainText = plainText.replace(/<[^>]*>/g, '');
     
-    // Normalize whitespace
+    // Normalize whitespace (especially after table pipe replacement)
     plainText = plainText.replace(/\s+/g, ' ').trim();
     
     return plainText;
@@ -1034,7 +1042,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const modelType = state.apiType === 'domestic' 
             ? state.settings.domesticModelType 
             : state.settings.modelType;
-                appendMessage(`已连接到${state.apiType === 'domestic' ? '国内' : 'Gemini'} API，使用模型: ${modelType}`, "system", "info");
+                appendMessage(`已连接到${state.apiType === 'domestic' ? '国内' : 'Gemini'} API,使用模型: ${modelType}`, "system", "info");
             }
         } else {
             // Initialization failed, try fallback to other API type
@@ -1049,10 +1057,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const modelType = state.apiType === 'domestic' 
                     ? state.settings.domesticModelType 
                     : state.settings.modelType;
-                appendMessage(`已通过备用${state.apiType === 'domestic' ? '国内' : 'Gemini'} API连接，使用模型: ${modelType}`, "system", "info");
+                appendMessage(`已通过备用${state.apiType === 'domestic' ? '国内' : 'Gemini'} API连接,使用模型: ${modelType}`, "system", "info");
                 appendMessage("您选择的模型可能不适用于当前设置。", "system", "warning");
             } else {
-                appendMessage(`无法连接到任何API。请检查您的API密钥和设置。`, "system", "error");
+                appendMessage(`无法连接到任何API。请检查您返回主页面,在右上角的设置种配置的API密钥并保存。`, "system", "error");
             }
         }
     } catch (error) {
@@ -1144,22 +1152,21 @@ async function initChat() {
         // Load settings directly from service
         state.settings = settingsService.getSettings();
         
+        // Initialize Shared AudioContext if it doesn't exist or is closed
+        if (!state.sharedAudioContext || state.sharedAudioContext.state === 'closed') {
+            try {
+                state.sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 22000 });
+                // console.log(`[Chat.js - initChat] Initialized shared AudioContext. Sample rate: ${state.sharedAudioContext.sampleRate}`); // Can be commented out
+            } catch (e) {
+                console.error("[Chat.js - initChat] Failed to create shared AudioContext:", e);
+                // Fallback or error display might be needed here
+                appendMessage("无法初始化音频播放组件。", "system", "error");
+                state.isAudioEnabled = false; // Disable audio if context fails
+            }
+        }
+        
         // Determine API type based on settings
         state.apiType = state.settings.useDomesticAPI ? 'domestic' : 'gemini';
-        
-        console.debug('Chat initialization - settings loaded:', JSON.stringify({
-            apiType: state.apiType,
-            useDomesticAPI: state.settings.useDomesticAPI,
-            modelType: state.apiType === 'domestic' ? state.settings.domesticModelType : state.settings.modelType,
-            hasApiKey: state.apiType === 'domestic' ? !!state.settings.domesticApiKey : !!state.settings.apiKey,
-            voiceSpeed: state.settings.voiceSpeed, // Voice speed
-            voiceType: state.settings.voiceType, // Voice type
-            temperature: state.settings.temperature, // Temperature
-            maxTokens: state.settings.maxTokens, // Maximum token count
-            topP: state.settings.topP, // Top P
-            topK: state.settings.topK, // Top K
-            systemInstructions: state.settings.systemInstructions ? state.settings.systemInstructions.substring(0, 30) + '...' : '' // System prompt
-        }, null, 2));
         
         state.startTime = new Date();
         state.userTurnCount = 0;
@@ -1174,8 +1181,8 @@ async function initChat() {
                        state.settings.apiKey;
         
         if (!apiKey) {
-            console.warn(`API密钥未配置（${state.apiType === 'domestic' ? '国内' : 'Gemini'} API）。请前往设置...`);
-            appendMessage(`API密钥未配置（${state.apiType === 'domestic' ? '国内' : 'Gemini'} API）。请前往设置...`, "system");
+            console.warn(`API密钥未配置(${state.apiType === 'domestic' ? '国内' : 'Gemini'} API)。请前往设置...`);
+            appendMessage(`API密钥未配置()${state.apiType === 'domestic' ? '国内' : 'Gemini'} API)。请返回主页面，点击右上角的设置图标进行配置并保存。`, "system");
             state.isConnected = false;
             enableInput();
             return false;
@@ -1185,47 +1192,42 @@ async function initChat() {
         if (state.apiType === 'domestic' && state.isAudioEnabled) {
             try {
                 console.log("Preloading Web Speech API voices for domestic API TTS");
-                if (window.speechSynthesis) {
-                    // Force voice list to load
-                    speechSynthesis.getVoices();
-                    
-                    // If browser supports onvoiceschanged, log when voices are loaded
-                    if ('onvoiceschanged' in speechSynthesis) {
-                        speechSynthesis.onvoiceschanged = () => {
-                            const voices = speechSynthesis.getVoices();
-                            console.log(`Loaded ${voices.length} voices for Web Speech API`);
-                            
-                            // Find and log available English voices
-                            const englishVoices = voices.filter(v => v.lang.includes('en'));
-                            if (englishVoices.length > 0) {
-                                console.log("Available English voices:", 
-                                    englishVoices.map(v => `${v.name} (${v.lang})`).join(', '));
-                            } else {
-                                console.warn("No English voices found, will use default voice");
-                            }
-                            
-                            // Log what voice type we're trying to match
-                            console.log(`Will try to match voice type: ${state.settings.voiceType || 'Female (default)'}`);
-                        };
-                    }
-                } else {
-                    console.warn("Web Speech API not supported in this browser");
-                }
+                // 直接使用浏览器语音合成
+                preloadBrowserVoices();
             } catch (error) {
-                console.error("Error preloading Web Speech API:", error);
-                // Continue anyway, we'll handle this during playback
+                console.error("Error preloading voices:", error);
+                // 继续执行，稍后会再尝试
             }
-            
-            // Add settings listener for domestic API voice settings
-            settingsService.addListener((change) => {
-                if (state.apiType !== 'domestic') return;
+        }
+        
+        // 添加统一的浏览器语音加载功能
+        function preloadBrowserVoices() {
+            if (window.speechSynthesis) {
+                // Force voice list to load
+                speechSynthesis.getVoices();
                 
-                // Update if voice speed or type changes
-                if (change.key === 'voiceSpeed' || change.key === 'voiceType') {
-                    console.log(`Speech setting changed (${change.key} = ${change.value}) for domestic API`);
-                    // The next speech request will use the new settings automatically
+                // If browser supports onvoiceschanged, log when voices are loaded
+                if ('onvoiceschanged' in speechSynthesis) {
+                    speechSynthesis.onvoiceschanged = () => {
+                        const voices = speechSynthesis.getVoices();
+                        console.log(`Loaded ${voices.length} voices for Web Speech API`);
+                        
+                        // Find and log available English voices
+                        const englishVoices = voices.filter(v => v.lang.includes('en'));
+                        if (englishVoices.length > 0) {
+                            console.log("Available English voices:", 
+                                englishVoices.map(v => `${v.name} (${v.lang})`).join(', '));
+                        } else {
+                            console.warn("No English voices found, will use default voice");
+                        }
+                        
+                        // Log what voice type we're trying to match
+                        console.log(`Will try to match voice type: ${state.settings.voiceType || 'Female (default)'}`);
+                    };
                 }
-            });
+            } else {
+                console.warn("Web Speech API not supported in this browser");
+            }
         }
         
         // Initialize Gemini voice agent for TTS - only if we're using Gemini API
@@ -1242,13 +1244,21 @@ async function initChat() {
                 
                 if (!isLiveApiModel) {
                     console.warn(`Model ${selectedModel} does not support WebSocket Live API. Disabling Gemini agent.`);
-                    appendMessage(`注意: 实时语音输出和交互对该模型 (${selectedModel}) 不可用。使用标准API。`, "system", "warning");
-                    // Revert apiType to ensure standard API calls are used
+                    appendMessage(`注意: 当前模型 (${selectedModel}) 不支持实时语音输出，将使用浏览器语音合成功能。`, "system", "warning");
+                    // 强制使用浏览器语音合成
                     state.apiType = 'gemini'; // Keep as gemini, but agent will be null
-                    state.geminiVoiceAgent = null; 
+                    state.geminiVoiceAgent = null;
+                    state.workerAudioFailed = true; // 将此设置为true，以便使用浏览器语音合成
+                    
+                    // 预加载浏览器语音
+                    preloadBrowserVoices();
                 } else if (!wsUrl) {
                     console.warn("WebSocket URL not configured, Gemini agent disabled");
-                    state.geminiVoiceAgent = null; 
+                    state.geminiVoiceAgent = null;
+                    state.workerAudioFailed = true; // 使用浏览器语音合成
+                    
+                    // 预加载浏览器语音
+                    preloadBrowserVoices();
                 } else {
                     // Model supports Live API and URL is configured, proceed with initialization
                     // Configure for AUDIO modality, text will come via events or transcription
@@ -1257,19 +1267,19 @@ async function initChat() {
                         forceResponseModalities: ["AUDIO"] // Force AUDIO output
                     });
                     
-                    console.log("Gemini Live Agent final configuration:", JSON.stringify({
-                        model: agentConfig.model,
-                        voiceType: agentConfig.generation_config?.speech_config?.voice_config?.prebuilt_voice_config?.voice_name,
-                        voiceSpeed: state.settings.voiceSpeed || 1.2,
-                        responseModalities: agentConfig.generation_config?.response_modalities
-                    }, null, 2));
+                    // console.log("Gemini Live Agent final configuration:", JSON.stringify({ // Commented out - verbose
+                    //     model: agentConfig.model,
+                    //     voiceType: agentConfig.generation_config?.speech_config?.voice_config?.prebuilt_voice_config?.voice_name,
+                    //     voiceSpeed: state.settings.voiceSpeed || 1.2,
+                    //     responseModalities: agentConfig.generation_config?.response_modalities
+                    // }, null, 2));
                     
                     state.geminiVoiceAgent = new GeminiAgent({
                         url: wsUrl,
                         config: agentConfig,
                         autoConnect: false, 
                         name: 'GeminiAgent (Live Chat)' // Rename for clarity
-                    });
+                    }, state.sharedAudioContext); // MODIFIED: Pass sharedAudioContext
                     
                     // Set voice playback speed
                     if (state.geminiVoiceAgent.setPlaybackRate) {
@@ -1277,49 +1287,6 @@ async function initChat() {
                         state.geminiVoiceAgent.setPlaybackRate(voiceSpeed);
                     }
                     elements.aiAudioElement.playbackRate = state.settings.voiceSpeed || 1.2;
-                    
-                    // --- Event Handlers for Live Agent ---
-                    
-                    // Handle incoming TEXT from the agent (model's response)
-                    // --- MODIFICATION START: Remove text handler, as main response comes via REST ---
-                    /*
-                    state.geminiVoiceAgent.on('text', (text) => {
-                        console.log(`[Agent Event] Received TEXT: "${text.substring(0, 60)}..."`);
-                        // Append text received directly from the live agent
-                        // Ensure no duplicate audio playback is triggered here
-                        appendMessage(text, 'ai', 'normal', true); // Pass noAudio=true
-                        // Add to chat history (handle potential fragmentation if needed later)
-                        if (!state.chatHistory.length || state.chatHistory[state.chatHistory.length - 1].role !== 'ai') {
-                            state.chatHistory.push({ role: 'ai', text: text });
-                        } else {
-                            // Append to the last AI message if fragmented
-                            state.chatHistory[state.chatHistory.length - 1].text += text;
-                        }
-                        enableInput(); // Re-enable input as text arrives
-                    });
-                    */
-                    // --- MODIFICATION END ---
-
-                    // Handle incoming AUDIO from the agent
-                    // --- MODIFICATION START: Remove audio handler, as audio comes from Browser TTS ---
-                    /*
-                    state.geminiVoiceAgent.on('audio', (audioBase64) => {
-                        console.log("[Agent Event] Received AUDIO data");
-                        const audioBlob = base64ToBlob(audioBase64, 'audio/ogg');
-                        const audioUrl = URL.createObjectURL(audioBlob);
-                        elements.aiAudioElement.src = audioUrl;
-                        elements.aiAudioElement.playbackRate = state.settings.voiceSpeed || 1.2;
-                        elements.aiAudioElement.play().catch(e => {
-                            console.error("Error playing AI audio:", e);
-                            // Reset audio playing state if playback fails
-                            state.audioPlaying = false;
-                            document.querySelectorAll('.message-content.is-playing').forEach(el => {
-                                el.classList.remove('is-playing');
-                            });
-                        });
-                    });
-                    */
-                    // --- MODIFICATION END ---
                     
                     // Set up event handlers for audio element (These are still needed for browser TTS)
                     elements.aiAudioElement.addEventListener('play', () => {
@@ -1364,6 +1331,8 @@ async function initChat() {
                         document.querySelectorAll('.message-content.is-playing').forEach(el => {
                             el.classList.remove('is-playing');
                         });
+                        // 标记 worker 语音失败，使用浏览器语音合成
+                        state.workerAudioFailed = true;
                     });
                     
                     // Add settings listener, update voice agent when voice settings change
@@ -1398,19 +1367,52 @@ async function initChat() {
                     
                     // Connect to the Gemini voice agent *only if* it was initialized
                     // Connect manually now
-                    const connected = await state.geminiVoiceAgent.connect();
-                    if (connected) {
-                        console.log("Gemini voice agent connected successfully");
-                    } else {
-                        console.warn("Gemini voice agent connection failed, TTS will not be available");
-                        // Don't set agent to null here, let the agent's own logic handle retries
-                        appendMessage(`无法连接实时语音输出。`, "system", "warning");
+                    try {
+                        const connected = await state.geminiVoiceAgent.connect();
+                        if (connected) {
+                            console.log("Gemini voice agent connected successfully");
+                            // Connect AudioStreamer output to the shared AudioContext destination
+                            if (state.sharedAudioContext && state.sharedAudioContext.state === 'running') {
+                                const liveAgentAudioOutput = state.geminiVoiceAgent.getAudioOutputNode();
+                                if (liveAgentAudioOutput) {
+                                    try {
+                                        liveAgentAudioOutput.connect(state.sharedAudioContext.destination);
+                                        console.log("[Chat.js - initChat] Connected GeminiAgent (Live Chat) AudioStreamer to shared AudioContext destination."); // Keep - important
+                                    } catch (e) {
+                                        console.error("[Chat.js - initChat] Error connecting live agent audio output:", e);
+                                    }
+                                } else {
+                                    console.warn("[Chat.js - initChat] GeminiAgent (Live Chat) audio output node not available.");
+                                }
+                            } else {
+                                console.warn("[Chat.js - initChat] Shared AudioContext not ready for live agent output connection.");
+                            }
+                        } else {
+                            console.warn("Gemini voice agent connection failed, TTS will not be available");
+                            // Don't set agent to null here, let the agent's own logic handle retries
+                            appendMessage(`无法连接实时语音输出，将使用浏览器语音合成。`, "system", "warning");
+                            state.workerAudioFailed = true; // 使用浏览器语音合成
+                            
+                            // 预加载浏览器语音
+                            preloadBrowserVoices();
+                        }
+                    } catch (connectionError) {
+                        console.error("Error connecting to Gemini voice agent:", connectionError);
+                        appendMessage(`语音服务连接失败，将使用浏览器语音合成。`, "system", "warning");
+                        state.workerAudioFailed = true;
+                        
+                        // 预加载浏览器语音
+                        preloadBrowserVoices();
                     }
                 }
             } catch (error) {
                 console.error("Error initializing Gemini voice agent:", error);
                 // We'll continue without TTS
                 state.geminiVoiceAgent = null;
+                state.workerAudioFailed = true; // 使用浏览器语音合成
+                
+                // 预加载浏览器语音
+                preloadBrowserVoices();
             }
         }
         
@@ -1425,12 +1427,12 @@ async function initChat() {
                 state.isConnected = true;
             } else {
                 console.warn(`Failed to connect to ${state.apiType} API...`, testResult.error);
-                appendMessage(`无法连接到AI助手: ${testResult.error}。使用模拟模式。`, "system");
+                appendMessage(`无法连接到AI助手: ${testResult.error}。请检查您在主页面右上角设置中的API配置是否正确，使用模拟模式继续。`, "system");
                 state.isConnected = false;
             }
         } catch (error) {
             console.warn(`Failed to initialize ${state.apiType} API...`, error);
-            appendMessage(`连接AI助手时出错: ${error.message}。使用模拟模式。`, "system");
+            appendMessage(`连接AI助手时出错: ${error.message}。请检查您在主页面右上角设置中的API配置是否正确，使用模拟模式继续。`, "system");
             state.isConnected = false;
         }
         
@@ -1438,12 +1440,14 @@ async function initChat() {
         enableInput();
         
         // Add after initializing state values
-        state.workerAudioFailed = false; // Tracks if Worker TTS has failed and we should use browser TTS
+        if (!state.workerAudioFailed) {
+            state.workerAudioFailed = false; // Tracks if Worker TTS has failed and we should use browser TTS
+        }
         
         return state.isConnected; // Return true only if connection succeeded
     } catch (error) {
         console.error('Chat system initialization failed:', error);
-        appendMessage(`聊天系统初始化失败: ${error.message}。使用模拟模式。`, "system");
+        appendMessage(`聊天系统初始化失败: ${error.message}。请检查您在主页面右上角设置中的API配置是否正确，使用模拟模式继续。`, "system");
         enableInput();
         return false;
     }

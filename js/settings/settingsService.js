@@ -1,9 +1,10 @@
-import { defaultSettings, loadSettings as loadFromStorage, saveSettings as saveToStorage } from './settingsUtils.js'; // We'll move utils here
+import { DEFAULT_SETTINGS } from '../settings.js'; // Import main DEFAULT_SETTINGS
+import { loadSettings as loadFromStorage, saveSettings as saveToStorage } from './settingsUtils.js'; // We'll move utils here
 
 class SettingsService {
     constructor() {
-        // Initialize with defaults, then load saved settings
-        this._settings = { ...defaultSettings };
+        // Initialize with defaults from settings.js, then load saved settings via settingsUtils.js
+        this._settings = { ...DEFAULT_SETTINGS }; // Use imported DEFAULT_SETTINGS
         this.load();
         console.log("SettingsService Initialized.");
     }
@@ -11,14 +12,14 @@ class SettingsService {
     // Load settings from storage
     load() {
         try {
-            const loaded = loadFromStorage(); // Use the utility function
+            const loaded = loadFromStorage(); // This now correctly uses DEFAULT_SETTINGS from settings.js internally
             // Merge loaded settings with defaults to ensure all keys exist
-            this._settings = { ...defaultSettings, ...loaded };
+            this._settings = { ...DEFAULT_SETTINGS, ...loaded }; // Ensure initial state is based on settings.js defaults
             console.debug("SettingsService: Settings loaded:", this._settings);
         } catch (error) {
             console.error("SettingsService: Error loading settings, using defaults.", error);
             // Fallback to defaults in case of error
-            this._settings = { ...defaultSettings };
+            this._settings = { ...DEFAULT_SETTINGS }; // Use imported DEFAULT_SETTINGS
         }
     }
 

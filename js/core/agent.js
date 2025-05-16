@@ -28,16 +28,17 @@ import { arrayBufferToBase64 } from '../utils/utils.js';
 export class GeminiAgent extends EventTarget {
     /**
      * Creates a new GeminiAgent instance
-     * @param {GeminiAgentConfig} options - Configuration options
+     * @param {Object} options - Configuration options
+     * @param {AudioContext} [audioContext=null] - Optional shared AudioContext.
      */
-    constructor(options = {}) {
+    constructor(options = {}, audioContext = null) {
         super();
         const {
             name = 'GeminiAgent (Call)',
             url = null,
             config = null,
             autoConnect = true,
-            modelSampleRate = 16000
+            modelSampleRate = 22000
         } = options;
         
         this.name = name;
@@ -66,7 +67,7 @@ export class GeminiAgent extends EventTarget {
         this.client = new GeminiWebsocketClient(name, this.url, this.config);
         this.isConnected = false;
 
-        this.audioStreamer = new AudioStreamer(this.modelSampleRate, settings.voiceSpeed || 1.0);
+        this.audioStreamer = new AudioStreamer(audioContext, modelSampleRate, settings.voiceSpeed || 1.0);
 
         this.setupEventListeners();
         console.log(`${name} Created. Ready to connect.`);
@@ -426,6 +427,17 @@ export class GeminiAgent extends EventTarget {
      */
     getAudioOutputNode() {
         return this.audioStreamer?.getOutputNode();
+    }
+
+    interruptSpeech() {
+        console.log(`[${this.name}] interruptSpeech called.`);
+        if (this.audioStreamer && typeof this.audioStreamer.stop === 'function') {
+            this.audioStreamer.stop(); // Assuming your AudioStreamer has a stop() method
+        } else {
+            console.warn(`[${this.name}] AudioStreamer does not have a stop method or is not available.`);
+        }
+        // You might also want to clear any pending audio data or reset flags
+        // related to speech output within the agent itself.
     }
 }
 

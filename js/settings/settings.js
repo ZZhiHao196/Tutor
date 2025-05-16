@@ -2,16 +2,17 @@
 
 // Default settings
 const DEFAULT_SETTINGS = {
-    modelType: 'gemini-2.0-flash-exp',
+    modelType: 'gemini-2.0-flash-live-001',
     apiKey: '',
     temperature: 0.7,
-    maxTokens: 1024,
-    voiceSpeed: 1.2,
+    maxTokens: 256,
+    voiceSpeed: 1.1,
     topP: 0.95,
     topK: 40,
     systemInstructions: 'You are a helpful English tutor. Help the user practice English conversation.',
     voiceType: 'Aoede',
-    chatApiProxyUrl: '',
+    sampleRate: 16000,
+    chatApiProxyUrl: 'https://gemini-proxy.zzhihao.top',
     useDomesticAPI: false,
     domesticApiKey: '',
     domesticApiEndpoint: 'https://chat.ecnu.edu.cn/open/api/v1',
@@ -75,6 +76,7 @@ class SettingsService {
      * @returns {*} Setting value
      */
     getSetting(key, defaultValue = undefined) {
+        if (key === 'pitch') return undefined;
         return this._settings.hasOwnProperty(key) ? this._settings[key] : defaultValue;
     }
     
@@ -177,6 +179,8 @@ export function initializeSettingsPanel() {
         // Fill inputs using settings from the service
         Object.entries(elements).forEach(([key, element]) => {
             if (element) {
+                if (key === 'pitch' || key === 'sampleRate') return;
+
                 const value = settings[key];
                 if (element.type === 'range') {
                     element.value = value;
@@ -231,10 +235,11 @@ export function initializeSettingsPanel() {
         // Add a note about proxy requirement to proxy URL input
         const proxyUrlInput = document.getElementById('chat-api-proxy-url');
         if (proxyUrlInput) {
-            // Add a label note if it doesn't already have one
+        
             const note = proxyUrlInput.nextElementSibling;
             if (note && note.classList.contains('input-note')) {
-                note.innerHTML = '<b>Required for ALL API access</b>. Use your Cloudflare worker URL (e.g., https://gemini-proxy.zzhihao.top)';
+            
+                note.textContent = '为确保稳定使用，建议配置代理。可修改为自定义代理。'; 
             }
         }
 
@@ -248,6 +253,8 @@ export function initializeSettingsPanel() {
                 let settingsChanged = false;
                 Object.entries(elements).forEach(([key, element]) => {
                     if (element) {
+                        if (key === 'pitch' || key === 'sampleRate') return;
+
                         let newValue;
                          if (element.type === 'range' || element.type === 'number') {
                              newValue = parseFloat(element.value);
@@ -272,6 +279,10 @@ export function initializeSettingsPanel() {
                         settingsService.updateSetting('voiceSpeed', newSpeed);
                         settingsChanged = true;
                      }
+                }
+                
+                if (settingsService.getSetting('sampleRate') !== 16000) {
+                    settingsService.updateSetting('sampleRate', 16000);
                 }
 
                 const modal = document.getElementById('settings-modal');

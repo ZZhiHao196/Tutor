@@ -8,7 +8,7 @@
 const BUFFER_SIZE = 2048;
 const INT16_MAX = 32767;
 const INT16_MIN = -32768;
-const TARGET_SAMPLE_RATE = 16000; // Explicitly define target rate
+const TARGET_SAMPLE_RATE = 22000; // Explicitly define target rate
 
 class AudioProcessingWorklet extends AudioWorkletProcessor {
     /**

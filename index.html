@@ -35,16 +35,19 @@
                             <option value="gemini-2.0-flash-live-preview-04-09">gemini-2.0-flash-live-preview-04-09</option>
                             <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp</option>
                         </select>
+                        <span class="tooltip">选择您想使用的AI模型。推荐使用带有 'live' 或 'exp' 的模型以获得最佳的语音通话体验。</span>
                     </div>
                     <div class="model-note">注意:语音通话功能仅支持具有Live API能力的模型</div>
                     <div class="setting-item">
                         <label for="api-key">API 密钥</label>
                         <input type="password" id="api-key" placeholder="Enter your API key" autocomplete="new-password">
+                        <span class="tooltip">您的Google AI Studio API密钥。用于Gemini模型相关的AI功能，包括文字聊天和语音通话。</span>
                     </div>
                     <div class="setting-item">
-                        <label for="chat-api-proxy-url">Chat API代理网址:</label>
-                        <input type="password" id="chat-api-proxy-url" name="chatApiProxyUrl" placeholder="e.g., https://your-proxy.com/api/gemini/chat" autocomplete="new-password">
-                        <span class="input-note">可选: 如果直接API访问被阻止,请使用此选项.</span>
+                        <label for="chat-api-proxy-url">Chat API代理网址 (推荐)</label>
+                        <input type="text" id="chat-api-proxy-url" name="chatApiProxyUrl" placeholder="例如: https://your-proxy-worker.com" autocomplete="url" value="https://gemini-proxy.zzhihao.top">
+                        <span class="input-note">为确保稳定使用，建议配置代理。可修改为自定义代理。</span>
+                        <span class="tooltip">（推荐）用于Gemini API的代理服务器地址。有助于提高连接稳定性和速率。保留为空则不使用代理。</span>
                     </div>
                 </div>
 
@@ -57,6 +60,7 @@
                             <span>Domestic API (使用国内API)</span>
                         </label>
                         <div class="domestic-api-note">启用此选项以使用国内API代替Gemini API</div>
+                        <span class="tooltip">勾选此项以使用国内部署的AI模型（如ECNU模型系列）进行文字聊天。取消勾选则使用Gemini模型。</span>
                     </div>
                     
                     <div id="domestic-api-section" style="display: none;">
@@ -66,14 +70,17 @@
                                 <option value="ecnu-max">ECNU-Max </option>
                                 <option value="ecnu-reasoner">ECNU-Reasoner </option>
                             </select>
+                            <span class="tooltip">选择您想使用的国内AI模型。</span>
                         </div>
                         <div class="setting-item">
                             <label for="domestic-api-key">API 密钥</label>
                             <input type="password" id="domestic-api-key" placeholder="Enter Domestic Model API Key" autocomplete="new-password">
+                            <span class="tooltip">您的国内模型API密钥。仅在勾选了"使用国内API"时需要。</span>
                         </div>
                         <div class="setting-item">
                             <label for="domestic-api-endpoint">API 端点</label>
                             <input type="text" id="domestic-api-endpoint" placeholder="https://chat.ecnu.edu.cn/open/api/v1" value="https://chat.ecnu.edu.cn/open/api/v1">
+                            <span class="tooltip">国内模型的API服务器地址。通常不需要修改。</span>
                         </div>
                     </div>
                 </div>
@@ -84,55 +91,49 @@
                         <label for="temperature">Temperature</label>
                         <input type="range" id="temperature" min="0" max="2" step="0.1" value="1.8">
                         <span class="value-display">1.8</span>
+                        <span class="tooltip">控制AI回复的随机性。较高值（如0.8）使回复更随机、更具创造性；较低值（如0.2）使回复更确定、更专注。范围0-2。</span>
                     </div>
                     <div class="setting-item">
                         <label for="max-tokens">Max Tokens</label>
                         <input type="number" id="max-tokens" value="512" min="1" max="4096">
+                        <span class="tooltip">AI回复的最大长度（以token为单位）。Token可以理解为词或词块。较大的值允许更长的回复。范围1-4096。</span>
                     </div>
                     <div class="setting-item">
                         <label for="top-p">Top P(0~1)</label>
                         <input type="range" id="top-p" min="0" max="1" step="0.01" value="0.9">
                         <span class="value-display">0.9</span>
+                        <span class="tooltip">控制AI回复的多样性。AI会从概率总和达到此值的词汇中选择。例如0.9表示从概率最高的90%词汇中选择。范围0-1。</span>
                     </div>
                     <div class="setting-item">
                         <label for="top-k">Top K(1~100)</label>
                         <input type="number" id="top-k" value="40" min="1" max="100">
+                        <span class="tooltip">控制AI回复的词汇范围。AI会从概率最高的K个词汇中选择下一个词。例如40表示从最可能的40个词中选择。范围1-100。</span>
                     </div>
                 </div> 
 
                 <div class="setting-group">
                     <h3>语音设置</h3>
                     <div class="setting-item">
-                        <label for="sample-rate">Sample Rate</label>
-                        <select id="sample-rate">
-                            <option value="16000">16 kHz</option>
-                            <option value="24000">24 kHz</option>
-                            <option value="44100">44.1 kHz</option>
-                            <option value="48000">48 kHz</option>
-                        </select>
-                    </div>
-                    <div class="setting-item">
                         <label for="voice-type">AI Voice</label>
                         <select id="voice-type">
-                            <option value="Aoede">Aoede</option>
-                            <option value="Puck">Puck</option>
-                            <option value="Charon">Charon</option>
-                            <option value="Kore">Kore</option>
-                            <option value="Fenrir">Fenrir</option>
-                            <option value="Leda">Leda</option>
-                            <option value="Orus">Orus</option>
-                            <option value="Zephyr">Zephyr</option>
+                            <option value="Aoede">Aoede (Female, US, Neural2-F style)</option>
+                            <option value="Kore">Kore (Female, US, Neural2-G style)</option>
+                            <option value="Puck">Puck (Male, US, Neural2-D style)</option>
+                            <option value="Charon">Charon (Male, US, Neural2-J style)</option>
+                            <option value="Fenrir">Fenrir (Male, US, Neural2-A style)</option>
                         </select>
+                        <span class="tooltip">选择AI在语音通话中使用的声音。不同的声音有不同的特点。</span>
                     </div>
                     <div class="setting-item">
                         <label for="voice-speed">语速</label>
                         <div class="speed-options">
-                            <div class="speed-option" data-speed="0.8">0.8x</div>
+                            <div class="speed-option" data-speed="0.9">0.9x</div>
                             <div class="speed-option" data-speed="1.0">1.0x</div>
+                            <div class="speed-option" data-speed="1.1">1.1x</div>
                             <div class="speed-option" data-speed="1.2">1.2x</div>
                             <div class="speed-option" data-speed="1.5">1.5x</div>
-                            <div class="speed-option" data-speed="2">2x</div>
                         </div>
+                        <span class="tooltip">调整AI说话的语速。1.0x为正常语速。</span>
                     </div>
                 </div>
 
@@ -141,6 +142,7 @@
                     <div class="setting-item">
                         <label for="system-instructions">AI指令</label>
                         <textarea id="system-instructions" rows="4" placeholder="Instructions for the AI">You are a helpful English tutor. Help the user practice English conversation.</textarea>
+                        <span class="tooltip">给AI的整体指令或角色设定。例如，您可以告诉AI它是一个友好的英语老师，或者专注于某个特定话题。</span>
                     </div>
                 </div>
                 </form>

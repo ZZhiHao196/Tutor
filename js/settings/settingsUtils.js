@@ -1,44 +1,22 @@
+import { DEFAULT_SETTINGS } from '../settings.js'; // Import from the main settings file
+
 // Default settings structure
-export const defaultSettings = {
-    modelType: 'gemini-2.0-flash-exp',
-    apiKey: '',
-    temperature: 1.8,
-    maxTokens: 256,
-    topP: 0.95,
-    topK: 64,
-    systemInstructions: 'You are a helpful English tutor. Help the user practice English conversation.',
-    
-    // Voice settings
-    voiceSpeed: 1.2,
-    voiceType: 'Aoede',
-    
-    // Proxy configuration - crucial for handling CORS issues with API calls
-    // This should point to your Cloudflare worker or other proxy that can forward requests
-    chatApiProxyUrl: '', 
-    
-    // Domestic model settings
-    useDomesticAPI: false,
-    domesticApiKey: '',
-    domesticModelType: 'ecnu-max', // Default ecnu-max model
-    
-    // This endpoint is used by the proxy server, not directly by client code
-    domesticApiEndpoint: 'https://chat.ecnu.edu.cn/open/api/v1'
-};
+// export const defaultSettings = { ... }; // REMOVED local defaultSettings
 
 // Function to load settings from localStorage
 export function loadSettings() {
     try {
         const savedSettings = localStorage.getItem('appSettings');
         if (!savedSettings) {
-            console.debug("No saved settings found, using defaults.");
-            return { ...defaultSettings }; // Return a copy of defaults
+            console.debug("No saved settings found, using defaults from settings.js.");
+            return { ...DEFAULT_SETTINGS }; // Use imported DEFAULT_SETTINGS
         }
         const parsed = JSON.parse(savedSettings);
         // Merge with defaults to ensure all keys are present
-        return { ...defaultSettings, ...parsed };
+        return { ...DEFAULT_SETTINGS, ...parsed }; // Use imported DEFAULT_SETTINGS
     } catch (error) {
         console.error('Error loading settings from localStorage:', error);
-        return { ...defaultSettings }; // Return defaults on error
+        return { ...DEFAULT_SETTINGS }; // Use imported DEFAULT_SETTINGS on error
     }
 }
 
@@ -46,7 +24,7 @@ export function loadSettings() {
 export function saveSettings(settings) {
     try {
         // Ensure all settings fields exist by merging with defaults
-        const settingsToSave = { ...defaultSettings, ...settings };
+        const settingsToSave = { ...DEFAULT_SETTINGS, ...settings }; // Use imported DEFAULT_SETTINGS
         
         // Check for missing proxy URL - critical for browser-based API calls
         if (!settingsToSave.chatApiProxyUrl) {

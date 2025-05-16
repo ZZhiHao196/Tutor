@@ -25,10 +25,8 @@ export class AudioRecorder extends EventTarget {
         
         // Core configuration
         this.config = {
-            sampleRate: options.sampleRate || 16000,
+            sampleRate: options.sampleRate || 22000,
             vadEnabled: options.vadEnabled !== undefined ? options.vadEnabled : true,
-            silenceThreshold: options.silenceThreshold || 0.01,
-            silenceDuration: options.silenceDuration || 1500,
             autoGainEnabled: options.autoGainEnabled !== undefined ? options.autoGainEnabled : true,
             minGain: options.minGain || 0.5,
             maxGain: options.maxGain || 4.0,

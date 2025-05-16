@@ -169,7 +169,7 @@ export class GeminiWebsocketClient extends EventTarget {
                     this.reconnectAttempts = 0; // Reset reconnection counter
                     
                     // Start keep-alive mechanism
-                    this.startKeepAlive();
+                    // this.startKeepAlive(); // Commented out to disable custom JSON ping
 
                     // Configure
                     try {
@@ -202,7 +202,7 @@ export class GeminiWebsocketClient extends EventTarget {
                         this.ws = null;
                         
                         // Stop keep-alive when connection closes
-                        this.stopKeepAlive();
+                        // this.stopKeepAlive(); // Commented out
                         
                         // Log more details about close
                         const cleanClose = (event.code === 1000 || event.code === 1001);
@@ -309,7 +309,7 @@ export class GeminiWebsocketClient extends EventTarget {
      * Closes the WebSocket connection
      */
     disconnect() {
-        this.stopKeepAlive();
+        // this.stopKeepAlive(); // Commented out
         
         if (this.ws) {
             try {
@@ -333,25 +333,25 @@ export class GeminiWebsocketClient extends EventTarget {
      */
     async receive(blob) {
         try {
-            // --- ADD RAW LOG ---
+            // --- RAW LOGGING CONTROLLED ---
             console.debug(`${this.name} [client.js] Received raw message (type: ${blob.constructor.name}, size: ${blob.size})`);
-            const rawText = await blob.text(); // Try to read as text first for debugging
+            const rawText = await blob.text();
             
-            // Don't log enormous messages
-            const shouldLog = blob.size < 10000;
-            if (shouldLog) {
-                console.log(`${this.name} [client.js] Received raw text content:`, rawText);
+            const shouldLogRawText = blob.size < 2000; // Only log raw text if reasonably small
+            if (shouldLogRawText) {
+                console.log(`${this.name} [client.js] Received raw text content (size ${blob.size}):`, rawText);
             } else {
-                console.log(`${this.name} [client.js] Received large message (${blob.size} bytes, not logging content)`);
+                console.log(`${this.name} [client.js] Received large message (size ${blob.size}), not logging full content.`);
             }
-            // --- END RAW LOG ---
+            // --- END RAW LOGGING CONTROL ---
 
-            // Now try to parse as JSON
             let response;
             try {
-                response = JSON.parse(rawText); // Use the text we already read
+                response = JSON.parse(rawText);
+                // console.log(`${this.name} [client.js] Successfully parsed JSON. Top-level keys:`, Object.keys(response)); // Commented out
             } catch (jsonError) {
                 console.error(`${this.name} Failed to parse message as JSON:`, jsonError);
+                console.error(`${this.name} Raw text that failed to parse:`, rawText.substring(0, 500) + (rawText.length > 500 ? "... (truncated)" : "")); // Log snippet of failing text
                 return;
             }
 
@@ -390,7 +390,8 @@ export class GeminiWebsocketClient extends EventTarget {
                 console.log(`${this.name} Received setupComplete message:`, response.setupComplete);
                 this.dispatchEvent(new CustomEvent('setup_complete', { detail: response.setupComplete }));
             } else {
-                console.warn(`${this.name} Unknown message format:`, response);
+                // console.warn(`${this.name} Unknown message format. Parsed response was:`, JSON.stringify(response, null, 2)); // Commented out, can be very verbose
+                console.warn(`${this.name} Unknown message format received. Keys:`, Object.keys(response)); // Log keys instead of full object
             }
         } catch (error) {
             console.error(`${this.name} Error processing message:`, error);
@@ -412,7 +413,9 @@ export class GeminiWebsocketClient extends EventTarget {
         const modelTurn = content.modelTurn || content.turn;
         if (modelTurn && Array.isArray(modelTurn.parts)) {
             modelTurn.parts.forEach(part => {
-                // Process text parts
+                // Log the entire part structure to understand what fields are present
+                // console.debug(`${this.name} [client.js] Processing part:`, JSON.stringify(part)); // Commented out
+
                 if (part.text) {
                     combinedText += part.text;
                     hasText = true;
@@ -420,12 +423,19 @@ export class GeminiWebsocketClient extends EventTarget {
                 
                 // Process audio data (new format uses inlineData)
                 if (part.inlineData && part.inlineData.mimeType?.startsWith('audio/')) {
+                    console.debug(`${this.name} Received audio data with MIME type: ${part.inlineData.mimeType}`); // Keep this one, it's useful
                     const audioData = _base64ToUint8Array(part.inlineData.data);
                     if (audioData) {
-                        console.debug(`${this.name} Received audio data (${audioData.length} bytes)`);
-                        this.dispatchEvent(new CustomEvent('audio', { detail: part.inlineData.data }));
+                        // console.debug(`${this.name} Dispatching audio event with base64 data (length: ${part.inlineData.data.length})`); // Can be verbose
+                        this.dispatchEvent(new CustomEvent('audio', { detail: part.inlineData.data })); 
                         hasAudio = true;
                     }
+                } else if (part.audioContent) {
+                    // Check for audio under 'audioContent' as a fallback (seen in 'candidates' handling)
+                    console.debug(`${this.name} Found audio data under 'audioContent'. Assuming base64.`);
+                    // We don't know the MIME type here, but agent.js handles base64 to Uint8Array for AudioStreamer
+                    this.dispatchEvent(new CustomEvent('audio', { detail: part.audioContent })); // Dispatch base64 string
+                    hasAudio = true;
                 }
             });
 

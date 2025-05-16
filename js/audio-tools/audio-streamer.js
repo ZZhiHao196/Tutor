@@ -6,12 +6,13 @@
 export class AudioStreamer {
     /**
      * Creates an instance of AudioStreamer.
+     * @param {AudioContext} [providedAudioContext=null] - An optional existing AudioContext.
      * @param {number} modelSampleRate - The sample rate of the incoming audio.
      * @param {number} [initialPlaybackRate=1.0] - The initial playback speed.
      */
-    constructor(modelSampleRate = 16000, initialPlaybackRate = 1.0) {
+    constructor(providedAudioContext = null, modelSampleRate = 22000, initialPlaybackRate = 1.0) {
         // Audio pipeline components
-        this.audioContext = null;
+        this.audioContext = providedAudioContext; // Use provided context if available
         this.audioSource = null;
         this.audioQueue = [];
         this.isPlaying = false;
@@ -41,11 +42,14 @@ export class AudioStreamer {
         if (this.isInitialized) return;
         
         try {
-            // Create audio context with proper browser prefixing
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            this.audioContext = new AudioContext({ sampleRate: this.modelSampleRate });
-            
-            console.log(`AudioStreamer: Actual AudioContext sample rate: ${this.audioContext.sampleRate}`);
+            // Create audio context if not provided
+            if (!this.audioContext) {
+                const AudioContextGlobal = window.AudioContext || window.webkitAudioContext;
+                this.audioContext = new AudioContextGlobal({ sampleRate: this.modelSampleRate });
+                console.log(`AudioStreamer: Created new AudioContext. Actual sample rate: ${this.audioContext.sampleRate}`);
+            } else {
+                console.log(`AudioStreamer: Using provided AudioContext. Sample rate: ${this.audioContext.sampleRate}`);
+            }
             
             // Create gain node for volume control
             this.gainNode = this.audioContext.createGain();
@@ -122,7 +126,7 @@ export class AudioStreamer {
         
         // Configure the buffer source
         source.buffer = buffer;
-        console.log(`AudioStreamer: Applying playbackRate ${this.playbackRate} to new chunk.`);
+        //console.log(`AudioStreamer: Applying playbackRate ${this.playbackRate} to new chunk.`);
         source.playbackRate.value = this.playbackRate;
         
         // Connect to the audio graph

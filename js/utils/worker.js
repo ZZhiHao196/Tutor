@@ -218,7 +218,7 @@ async function handleAudioRequest(request, env) {
             audioConfig: {
                 audioEncoding: 'OGG_OPUS',
                 speakingRate: requestBody.speakingRate || 1.0,
-                pitch: 0.0
+                pitch: 1.0
             }
         };
         
