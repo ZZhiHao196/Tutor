@@ -32,6 +32,16 @@ export const getConfig = (options = {}) => { // Add options parameter
     
     const settings = settingsService.getSettings(); // Use the service instance
     
+    // Voice mapping (similar to worker.js for consistency)
+    const voiceMap = {
+        'Aoede': 'en-US-Neural2-F',    // Example Female
+        'Puck': 'en-US-Neural2-D',     // Example Male
+        'Charon': 'en-US-Neural2-J',
+        'Kore': 'en-US-Neural2-G',
+        'Fenrir': 'en-US-Neural2-A',
+        // Add other mappings from your worker.js if needed
+    };
+
     console.debug(`[Config] Getting config. forceGemini: ${forceGemini}, isTtsAgent: ${isTtsAgent}, isCallPage: ${isCallPage}, useDomesticAPI: ${settings.useDomesticAPI}`);
 
     // Determine which model type to use
@@ -137,14 +147,15 @@ export const getConfig = (options = {}) => { // Add options parameter
         }
         // Get voice type from settings or use default voice
         const requestedVoiceType = settingsService.getSetting('voiceType') || 'Aoede';
+        const googleVoiceName = voiceMap[requestedVoiceType] || voiceMap['Aoede']; // Fallback to default mapped voice
         
-        console.log(`[!!! CONFIG !!!] Using voiceType: "${requestedVoiceType}" for Live Agent speech_config.`);
+        console.log(`[!!! CONFIG !!!] Requested voice: "${requestedVoiceType}", Mapped to Google TTS voice_name: "${googleVoiceName}" for Live Agent.`);
         
         config.generation_config.response_modalities = ["AUDIO"];
         config.generation_config.speech_config = {
             "voice_config": {
                 "prebuilt_voice_config": {
-                    "voice_name": requestedVoiceType // Revert to using requestedVoiceType directly
+                    "voice_name": googleVoiceName // Use the mapped Google-specific voice name
                 }
             },
             "language_code": "en-US"

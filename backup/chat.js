@@ -1,5 +1,7 @@
 import { settingsService } from '../settings/settings.js';    
 import { addRecord, generateLanguageFeedback } from '../features/record.js';
+import { GeminiAgent } from '../core/agent.js'; // Import GeminiAgent
+import { getConfig, getWebsocketUrl } from '../core/config.js'; // Import config utils
 import { base64ToBlob, markdownToHtml, showSaveModal, hideSaveModal, createSessionRecord } from '../utils/utils.js'; // Import utility functions
 
 // DOM elements
@@ -28,6 +30,7 @@ const state = {
     apiType: 'gemini', // Will be set based on settings during initialization
     isAudioEnabled: true, // Whether to play AI responses as audio
     audioPlaying: false, // Tracks if audio is currently playing
+    geminiVoiceAgent: null, // Added for Gemini voice API
     messagePlaybacks: {}, // Track playback counts for messages by ID
     audioPlayingTimestamp: null, // Added for audio playback state tracking
     workerAudioFailed: false, // Tracks if Worker TTS has failed and we should use browser TTS
@@ -90,24 +93,29 @@ async function getAudioForText(text) {
             state.audioPlayingTimestamp = null;
         }
         
-        // Block that used state.geminiVoiceAgent for TTS was previously removed.
-        // Ensuring it remains removed.
+        // PRIORITY: Use Gemini Live Agent if available and connected
+        if (state.apiType === 'gemini' && state.geminiVoiceAgent && state.geminiVoiceAgent.getConnectionStatus()) {
+            console.log("[Chat.js - getAudioForText] Using Gemini Live Agent for TTS.");
+            state.audioPlayingTimestamp = now; // Mark that we are initiating playback
+            state.audioPlaying = true; // Set before sending text, reset on turn_complete or error by agent
+            await state.geminiVoiceAgent.sendText(preparedText);
+            // Audio will be played by the AudioStreamer connected to the shared AudioContext.
+            // UI updates for .is-playing should be handled by 'text' and 'turn_complete' from this agent.
+            return true; // Indicates TTS process initiated successfully
+        }
 
         // Fallback conditions for custom worker or browser TTS
-        // This is now the primary path for Gemini TTS (via worker) or browser TTS
         if (state.apiType === 'domestic' || 
-            state.workerAudioFailed === true || 
-            (state.apiType === 'gemini' && state.settings.useDomesticAPI === false && state.workerAudioFailed === true) // Explicitly use browser if gemini worker fails
-           ) {
-            console.log("[Chat.js - getAudioForText] Using browser speech synthesis (domestic API or worker failed/unavailable).");
+            state.workerAudioFailed === true) {
+            console.log("[Chat.js - getAudioForText] Using browser speech synthesis (domestic API or worker failed).");
             return generateSpeechWithBrowser(preparedText);
         }
         
         // Record timestamp when we set audioPlaying to true for worker path
         state.audioPlayingTimestamp = now;
 
-        // CUSTOM WORKER TTS LOGIC (This is the main path for Gemini API TTS now)
-        console.log("[Chat.js - getAudioForText] Attempting TTS via custom worker (proxy).");
+        // CUSTOM WORKER TTS LOGIC (remains as fallback if Gemini Live Agent is not used/available)
+        console.log("[Chat.js - getAudioForText] Attempting TTS via custom worker.");
         let workerAudioUrl = '/audio'; 
         if (state.settings && state.settings.chatApiProxyUrl) {
             // Ensure no double slashes if proxyUrl ends with / and endpoint starts with /
@@ -893,6 +901,17 @@ function performCleanupAndExit() {
         }
     }
     
+    // Disconnect Gemini voice agent if it exists
+    if (state.geminiVoiceAgent) {
+        try {
+            state.geminiVoiceAgent.disconnect();
+            console.log("Disconnected Gemini voice agent");
+        } catch (e) {
+            console.error("Error disconnecting voice agent:", e);
+        }
+        state.geminiVoiceAgent = null;
+    }
+    
     // Reset state flags before leaving
     state.isConnected = false;
     state.audioPlaying = false;
@@ -1130,13 +1149,13 @@ async function initChat() {
         // Initialize Shared AudioContext if it doesn't exist or is closed
         if (!state.sharedAudioContext || state.sharedAudioContext.state === 'closed') {
             try {
-                // Keep 24000 based on previous user acceptance.
-                state.sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
-                // console.log(`[Chat.js - initChat] Initialized shared AudioContext. Sample rate: ${state.sharedAudioContext.sampleRate}`); 
+                state.sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 22000 });
+                // console.log(`[Chat.js - initChat] Initialized shared AudioContext. Sample rate: ${state.sharedAudioContext.sampleRate}`); // Can be commented out
             } catch (e) {
                 console.error("[Chat.js - initChat] Failed to create shared AudioContext:", e);
+                // Fallback or error display might be needed here
                 appendMessage("无法初始化音频播放组件。", "system", "error");
-                state.isAudioEnabled = false; 
+                state.isAudioEnabled = false; // Disable audio if context fails
             }
         }
         
@@ -1174,103 +1193,65 @@ async function initChat() {
                 // 继续执行，稍后会再尝试
             }
         }
+
+        // *** DISABLE GEMINI LIVE AGENT FOR TTS ***
+        // Always use the HTTP proxy for TTS instead of WebSocket/Live connection
+        // This ensures consistent voice rendering through your proxy server
+        console.log("[Chat.js - initChat] Using HTTP proxy for TTS, bypassing WebSocket Live API");
+        state.geminiVoiceAgent = null;
         
-        // 添加统一的浏览器语音加载功能
-        function preloadBrowserVoices() {
-            if (window.speechSynthesis) {
-                // Force voice list to load
-                speechSynthesis.getVoices();
-                
-                // If browser supports onvoiceschanged, log when voices are loaded
-                if ('onvoiceschanged' in speechSynthesis) {
-                    speechSynthesis.onvoiceschanged = () => {
-                        const voices = speechSynthesis.getVoices();
-                        console.log(`Loaded ${voices.length} voices for Web Speech API`);
-                        
-                        // Find and log available English voices
-                        const englishVoices = voices.filter(v => v.lang.includes('en'));
-                        if (englishVoices.length > 0) {
-                            console.log("Available English voices:", 
-                                englishVoices.map(v => `${v.name} (${v.lang})`).join(', '));
-                        } else {
-                            console.warn("No English voices found, will use default voice");
-                        }
-                        
-                        // Log what voice type we're trying to match
-                        console.log(`Will try to match voice type: ${state.settings.voiceType || 'Female (default)'}`);
-                    };
-                }
-            } else {
-                console.warn("Web Speech API not supported in this browser");
-            }
+        // Force using browser TTS fallback (which will be directed to your proxy)
+        if (state.apiType === 'gemini') {
+            console.log("[Chat.js - initChat] Initializing TTS for Gemini via HTTP proxy");
+            preloadBrowserVoices(); // Load browser voices as fallback anyway
         }
         
-        // Settings listener adjustments:
-        // Remove the part of the settings listener that specifically deals with
-        // reconnecting state.geminiVoiceAgent.
-        // The part that updates elements.aiAudioElement.playbackRate directly can remain if needed for browser/worker TTS.
-        settingsService.addListener((change) => {
-            // if (!state.geminiVoiceAgent) return; // This check is no longer needed if agent is removed
-
-            // Handle voice speed changes for the audio element used by worker/browser TTS
-            if (change.key === 'voiceSpeed') {
-                console.log(`Voice speed setting changed to ${change.value}`);
-                // if (state.geminiVoiceAgent && state.geminiVoiceAgent.setPlaybackRate) { // No longer have geminiVoiceAgent here
-                //     state.geminiVoiceAgent.setPlaybackRate(change.value);
-                // }
-                // Also update the audio element directly
-                elements.aiAudioElement.playbackRate = change.value;
-            }
-            
-            // REMOVED: Part that reconnected geminiVoiceAgent for voiceType/modelType changes
-            // if (change.key === 'voiceType' || change.key === 'modelType') { ... }
+        // Set up event handlers for audio element (only needed for browser TTS)
+        elements.aiAudioElement.addEventListener('play', () => {
+            console.log("AI audio playback started");
+            state.audioPlaying = true;
+            state.audioPlayingTimestamp = Date.now();
         });
-
-        // Ensure audio element event listeners are still present if they were inside the removed Gemini agent block
-        // and are generally useful. Let's assume they are currently outside or should be.
-        // Event listeners for elements.aiAudioElement:
-        if (elements.aiAudioElement && !elements.aiAudioElement.dataset.listenersAttached) {
-            elements.aiAudioElement.addEventListener('play', () => {
-                console.log("AI audio playback started (worker/browser TTS)");
-                state.audioPlaying = true;
-                state.audioPlayingTimestamp = Date.now();
+        
+        elements.aiAudioElement.addEventListener('ended', () => {
+            console.log("AI audio playback ended");
+            state.audioPlaying = false;
+            state.audioPlayingTimestamp = null;
+            document.querySelectorAll('.message-content.is-playing').forEach(el => {
+                el.classList.remove('is-playing');
             });
-            
-            elements.aiAudioElement.addEventListener('ended', () => {
-                console.log("AI audio playback ended (worker/browser TTS)");
+        });
+        
+        elements.aiAudioElement.addEventListener('pause', () => {
+            console.log("AI audio playback paused");
+            // Only set audioPlaying to false if we've actually reached the end
+            // This prevents issues where a pause for buffering would stop replay
+            if (elements.aiAudioElement.currentTime >= elements.aiAudioElement.duration - 0.5) {
                 state.audioPlaying = false;
                 state.audioPlayingTimestamp = null;
                 document.querySelectorAll('.message-content.is-playing').forEach(el => {
                     el.classList.remove('is-playing');
                 });
+            } else {
+                console.log(`Audio paused at ${elements.aiAudioElement.currentTime}s of ${elements.aiAudioElement.duration}s - likely buffering`);
+            }
+        });
+        
+        elements.aiAudioElement.addEventListener('error', (e) => {
+            console.error("Audio playback error:", e);
+            console.error("Audio error details:", 
+                elements.aiAudioElement.error ? 
+                `code=${elements.aiAudioElement.error.code}, message=${elements.aiAudioElement.error.message}` : 
+                "No error details"
+            );
+            state.audioPlaying = false;
+            state.audioPlayingTimestamp = null;
+            document.querySelectorAll('.message-content.is-playing').forEach(el => {
+                el.classList.remove('is-playing');
             });
-            
-            elements.aiAudioElement.addEventListener('pause', () => {
-                console.log("AI audio playback paused (worker/browser TTS)");
-                if (elements.aiAudioElement.currentTime >= elements.aiAudioElement.duration - 0.5) {
-                    state.audioPlaying = false;
-                    state.audioPlayingTimestamp = null;
-                    document.querySelectorAll('.message-content.is-playing').forEach(el => {
-                        el.classList.remove('is-playing');
-                    });
-                } else {
-                    // console.log(`Audio paused at ${elements.aiAudioElement.currentTime}s of ${elements.aiAudioElement.duration}s - likely buffering`);
-                }
-            });
-            
-            elements.aiAudioElement.addEventListener('error', (e) => {
-                console.error("Audio playback error (worker/browser TTS):", e);
-                // ... (rest of error handling)
-                state.audioPlaying = false;
-                state.audioPlayingTimestamp = null;
-                document.querySelectorAll('.message-content.is-playing').forEach(el => {
-                    el.classList.remove('is-playing');
-                });
-                // This might trigger fallback to browser TTS if worker audio fails here
-                state.workerAudioFailed = true; 
-            });
-            elements.aiAudioElement.dataset.listenersAttached = 'true'; // Mark listeners as attached
-        }
+            // 标记 worker 语音失败，使用浏览器语音合成
+            state.workerAudioFailed = true;
+        });
         
         // Test connection to API
         try {
