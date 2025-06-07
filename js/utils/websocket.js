@@ -11,18 +11,9 @@ export default {
   
 	  const url = new URL(request.url);
 	  const pathAndQuery = url.pathname + url.search;
-
-	  // --- Get API Key from Secrets ---
-	  const apiKey = env.GEMINI_API_KEY;
-	  if (!apiKey) {
-	   
-	    return new Response("API key not configured on proxy server", { status: 500 }); // This won't be a WebSocket response
-	  }
-
-	
-	  const targetUrl = `wss://generativelanguage.googleapis.com${pathAndQuery}${pathAndQuery.includes('?') ? '&' : '?'}key=${apiKey}`;
+	  const targetUrl = `wss://generativelanguage.googleapis.com${pathAndQuery}`;
 	  
-	  console.log('Target URL:', targetUrl.replace(apiKey, "[REDACTED_API_KEY]")); // Log target URL without exposing key
+	  console.log('Target URL:', targetUrl);
   
 	  const [client, proxy] = new WebSocketPair();
 	  proxy.accept();

@@ -1,0 +1,1022 @@
+/* English Tutor Live - Main Styles */
+
+:root {
+  --primary-color: rgb(82, 151, 241);
+  --secondary-color: #6accbc;
+  --secondary-gradient: linear-gradient(
+    135deg,
+    #e0f882 0%,
+    #38b789 100%
+  ); /* arctic-chill gradient */
+  --background-color: #f8f8f8;
+  --card-background: #ffffff;
+  --text-color: #333333;
+  --text-light: #666666;
+  --border-color: #e0e0e0;
+  --button-hover: #f1f3f4;
+  --user-message-bg: #e3f2fd;
+  --model-message-bg: #f0f4f8;
+  --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --radius-small: 8px;
+  --radius-medium: 12px;
+  --radius-large: 20px;
+
+  /* 更新的渐变色 - 天蓝色→薰衣草紫色→蜜桃红色→落日橘色 */
+  --gradient-start: #00bfff; /* 深天蓝色 */
+  --gradient-second: #9370db; /* 深薰衣草紫色 */
+  --gradient-third: #ff6b6b; /* 珊瑚粉色 */
+  --gradient-end: #ff8c00; /* 深橘色 */
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", "Roboto", "Oxygen", "Ubuntu", sans-serif;
+  background: linear-gradient(
+    135deg,
+    var(--gradient-start) 0%,
+    var(--gradient-second) 50%,
+    var(--gradient-third) 100%
+  );
+  color: var(--text-color);
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* Project Title Styling */
+.project-title {
+  position: absolute;
+  top: 10px; /* Adjust as needed, considering refresh/settings buttons */
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.8rem;
+  font-weight: bold;
+  padding: 10px 20px;
+  border-radius: var(--radius-small);
+  z-index: 1000; /* Ensure it's always above all other content including chat history */
+  background: linear-gradient(
+    to right,
+    var(--gradient-start),
+    var(--gradient-second),
+    var(--gradient-third),
+    var(--gradient-end)
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+  margin: 0; /* Remove default h1 margin */
+  white-space: nowrap; /* Prevent text wrapping to multiple lines */
+  overflow: hidden; /* Hide any overflow */
+  max-width: calc(100vw - 100px); /* Adjust for smaller screens */
+}
+
+.app-container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--background-color);
+}
+
+.header {
+  position: absolute;
+}
+/* Header Controls */
+.refresh-btn,
+.settings-btn {
+  position: absolute;
+  top: 20px;
+  z-index: 100;
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-small);
+  padding: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-light);
+  transition: all 0.3s ease;
+  color: inherit;
+}
+
+.refresh-btn {
+  left: 20px;
+}
+
+.settings-btn {
+  right: 20px;
+}
+
+.refresh-btn:hover,
+.settings-btn:hover {
+  background: var(--button-hover);
+  box-shadow: var(--shadow-medium);
+  color: var(--primary-color);
+  transform: translateY(-2px);
+}
+
+.refresh-btn svg,
+.settings-btn svg {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s ease;
+}
+
+.refresh-btn:hover svg {
+  transform: rotate(180deg);
+}
+
+.settings-btn:hover svg {
+  transform: rotate(45deg);
+}
+
+/* Chat History Area */
+.chat-history {
+  position: absolute;
+  top: 100px; /* Increased from 80px to make space for the title */
+  left: 20px;
+  right: 20px;
+  bottom: 140px;
+  background: var(--card-background);
+  border-radius: var(--radius-medium);
+  box-shadow: var(--shadow-medium);
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 10; /* Lower than title (z-index: 1000) to ensure title always appears above */
+  border: 1px solid var(--border-color);
+}
+
+.chat-history::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-history::-webkit-scrollbar-track {
+  background: var(--background-color);
+  border-radius: 4px;
+}
+
+.chat-history::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+}
+
+.chat-history::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary-gradient);
+}
+
+/* Chat Messages */
+.chat-message {
+  max-width: 80%;
+  padding: 12px 16px;
+  border-radius: var(--radius-medium);
+  line-height: 1.5;
+  word-wrap: break-word;
+  box-shadow: var(--shadow-light);
+  animation: messageSlide 0.3s ease-out;
+  color: inherit;
+}
+
+@keyframes messageSlide {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.user-message {
+  background: var(--primary-color);
+  color: white;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.model-message {
+  background: var(--model-message-bg);
+  color: var(--text-color);
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+  border-left: 3px solid;
+  border-image: var(--secondary-gradient) 1;
+}
+
+.model-message.streaming::after {
+  content: "▋";
+  display: inline-block;
+  animation: blink 1s step-end infinite;
+  margin-left: 4px;
+  color: var(--primary-color);
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Input Container */
+.text-input-container {
+  position: absolute;
+  bottom: 40px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  gap: 12px;
+  z-index: 20;
+  align-items: flex-end;
+}
+
+.text-input {
+  flex: 1;
+  min-height: 48px;
+  max-height: 120px;
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-large);
+  background: var(--card-background);
+  color: var(--text-color);
+  font-size: 16px;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-light);
+}
+
+.text-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1), var(--shadow-medium);
+}
+
+.text-input::placeholder {
+  color: var(--text-light);
+}
+
+/* Send Button */
+.send-btn {
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  background: var(--card-background);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: bold;
+  box-shadow: var(--shadow-medium);
+  transition: all 0.3s ease;
+}
+
+.send-btn:hover {
+  background: var(--button-hover);
+  color: var(--primary-color);
+  transform: scale(1.1) translateY(-3px);
+  box-shadow: 0 8px 25px rgba(26, 115, 232, 0.3);
+}
+
+.send-btn:active {
+  transform: scale(0.95);
+}
+
+.send-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: var(--shadow-light);
+}
+
+/* Microphone Button */
+/* Positioned to float above the text input container, 
+   ensuring it's always visible above the send button */
+.mic-btn {
+  position: absolute;
+  bottom: 100px; /* Fixed distance above text input (40px) + input height (48px) + margin (12px) */
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: var(--card-background);
+  color: var(--text-light);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-medium);
+  transition: all 0.3s ease;
+  z-index: 30;
+  border: 2px solid var(--border-color);
+}
+
+.mic-btn:hover {
+  background: var(--button-hover);
+  color: var(--primary-color);
+  transform: scale(1.1) translateY(-3px);
+  box-shadow: 0 8px 25px rgba(26, 115, 232, 0.3);
+}
+
+.mic-btn.active {
+  background: var(--secondary-gradient);
+  color: white;
+  border: none;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(224, 248, 130, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(224, 248, 130, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(224, 248, 130, 0);
+  }
+}
+
+.mic-btn svg {
+  width: 24px;
+  height: 24px;
+  transition: transform 0.3s ease;
+}
+
+.mic-btn:hover svg {
+  transform: scale(1.1);
+}
+
+/* Visualizer */
+.visualizer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 200px;
+  z-index: 1;
+  opacity: 0.8;
+  border-radius: var(--radius-medium) var(--radius-medium) 0 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(47, 123, 222, 0.05) 100%
+  );
+}
+
+/* Empty State */
+.chat-history:empty::before {
+  content: "👋 欢迎使用英语口语助手！\A⚙️ 点击设置按钮配置API自定义体验 \A🎯 点击麦克风开始语音对话\A✍️或在下方输入文字消息";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: pre-line;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1.8;
+  height: 100%;
+  /* 静态空间渐变 - 使用用户指定的颜色：天蓝色→薰衣草紫色→蜜桃红色→落日橘色 */
+  background: linear-gradient(
+    to right,
+    var(--gradient-start),
+    var(--gradient-second),
+    var(--gradient-third),
+    var(--gradient-end)
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .refresh-btn,
+  .settings-btn {
+    top: 10px;
+    padding: 10px;
+  }
+
+  .project-title {
+    font-size: 1.8rem;
+    top: 15px;
+    max-width: calc(100vw - 100px); /* Adjust for smaller screens */
+  }
+
+  .refresh-btn {
+    left: 10px;
+  }
+
+  .settings-btn {
+    right: 10px;
+  }
+
+  .chat-history {
+    top: 80px; /* Adjust if title + buttons take more space */
+    left: 10px;
+    right: 10px;
+    bottom: 140px; /* Adjusted to account for higher text input position */
+    padding: 15px;
+  }
+
+  .text-input-container {
+    left: 10px;
+    right: 10px;
+    bottom: 60px;
+  }
+
+  .mic-btn {
+    bottom: 130px;
+    right: 10px;
+    width: 50px;
+    height: 50px;
+  }
+
+  .chat-message {
+    max-width: 90%;
+  }
+}
+
+@media (max-width: 480px) {
+  .text-input {
+    font-size: 14px;
+    padding: 10px 14px;
+  }
+
+  .project-title {
+    font-size: 1.2rem;
+    padding: 8px 15px;
+    max-width: calc(
+      100vw - 80px
+    ); /* Leave space for buttons on very small screens */
+  }
+
+  .send-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+
+  .text-input-container {
+    bottom: 70px; /* Even higher on very small screens for better visualizer visibility */
+  }
+
+  .mic-btn {
+    bottom: 128px;
+    width: 46px;
+    height: 46px;
+  }
+
+  .mic-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .chat-history {
+    top: 70px; /* Adjust if title + buttons take more space */
+    bottom: 150px; /* Adjusted for even higher text input on very small screens */
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-color: #1e1e1e;
+    --card-background: #2d2d2d;
+    --text-color: #e0e0e0;
+    --text-light: #a0a0a0;
+    --border-color: #3d3d3d;
+    --button-hover: #3a3a3a;
+    --model-message-bg: #383838;
+  }
+
+  body {
+    background: linear-gradient(
+      135deg,
+      var(--gradient-start) 0%,
+      var(--gradient-second) 50%,
+      var(--gradient-third) 100%
+    );
+  }
+
+  .chat-history:empty::before {
+    background: linear-gradient(
+      to right,
+      var(--gradient-start),
+      var(--gradient-second),
+      var(--gradient-third),
+      var(--gradient-end)
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .chat-message {
+    color: inherit;
+  }
+
+  .model-message {
+    color: var(--text-color);
+  }
+
+  .user-message {
+    color: white;
+  }
+}
+
+/* Loading animations */
+.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid var(--primary-color);
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===============================
+   SETTINGS MODAL STYLES
+   =============================== */
+
+/* Settings Modal Structure */
+.settings-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-modal.active {
+  display: flex;
+}
+
+.settings-content {
+  background: var(--card-background);
+  border-radius: var(--radius-medium);
+  box-shadow: var(--shadow-medium);
+  max-width: 600px;
+  max-height: 90vh;
+  width: 90%;
+  overflow-y: auto;
+  position: relative;
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--card-background);
+  border-radius: var(--radius-medium) var(--radius-medium) 0 0;
+}
+
+.settings-header h2 {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 1.5rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: var(--button-hover);
+  color: var(--text-color);
+}
+
+.settings-body {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 20px;
+  padding-right: 30px;
+}
+
+.settings-footer {
+  padding: 20px;
+  border-top: 1px solid var(--border-color);
+  background: var(--card-background);
+  border-radius: 0 0 var(--radius-medium) var(--radius-medium);
+}
+
+.save-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius-small);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.save-btn:hover {
+  background: #1557b0;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+/* Settings Groups */
+.setting-group {
+  margin-bottom: 30px;
+}
+
+.setting-group h3 {
+  margin: 0 0 15px 0;
+  color: var(--text-color);
+  font-size: 1.2rem;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.setting-item {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.setting-item label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.setting-item input,
+.setting-item select,
+.setting-item textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-small);
+  background: var(--card-background);
+  color: var(--text-color);
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.setting-item input:focus,
+.setting-item select:focus,
+.setting-item textarea:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+  outline: none;
+}
+
+.setting-item textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.input-note {
+  display: block;
+  margin-top: 5px;
+  font-size: 0.8rem;
+  color: var(--text-light);
+  font-style: italic;
+}
+
+/* Custom Scrollbar for Settings */
+.settings-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.settings-body::-webkit-scrollbar-track {
+  background: var(--background-color);
+  border-radius: 10px;
+}
+
+.settings-body::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 10px;
+}
+
+.settings-body::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary-gradient);
+}
+
+/* Speed Options */
+.speed-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.speed-option {
+  padding: 8px 15px;
+  background-color: var(--background-color);
+  border: 2px solid var(--border-color);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  font-size: 0.9em;
+  color: var(--text-color);
+}
+
+.speed-option:hover {
+  background-color: var(--button-hover);
+  border-color: var(--primary-color);
+}
+
+.speed-option.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+/* Range Input Customization */
+input[type="range"] {
+  -webkit-appearance: none;
+  height: 8px;
+  border-radius: 5px;
+  background: var(--border-color);
+  outline: none;
+  padding: 0;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  transition: background 0.2s;
+  border: none;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  background: var(--secondary-gradient);
+  transform: scale(1.1);
+}
+
+.value-display {
+  position: absolute;
+  right: 0;
+  top: 30px;
+  background: var(--primary-color);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* Tooltip for settings */
+.setting-item .tooltip {
+  visibility: hidden;
+  width: 200px;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -100px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+.setting-item .tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #333 transparent transparent transparent;
+}
+
+.setting-item:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Checkbox styles */
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  vertical-align: middle;
+  accent-color: var(--primary-color);
+}
+
+.checkbox-note {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  display: block;
+  margin-top: 5px;
+  margin-left: 26px;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+/* Info icons */
+.info-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background-color: var(--text-light);
+  color: white;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 16px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-left: 5px;
+  cursor: help;
+}
+
+/* Notification */
+.notification {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: var(--secondary-color);
+  color: white;
+  padding: 12px 20px;
+  border-radius: var(--radius-small);
+  box-shadow: var(--shadow-medium);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 10000;
+}
+
+.notification.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* New feature highlight */
+.new-feature {
+  background-color: #fff8e1;
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: #ff8f00;
+  font-size: 0.8em;
+  margin-left: 8px;
+  font-weight: 500;
+}
+
+/* Settings Modal Mobile Adjustments */
+@media (max-width: 768px) {
+  .settings-content {
+    width: 95%;
+    max-height: 95vh;
+    margin: 10px;
+  }
+
+  .settings-header,
+  .settings-body,
+  .settings-footer {
+    padding: 15px;
+  }
+
+  .settings-body {
+    max-height: 70vh;
+    padding-right: 15px;
+  }
+
+  .speed-options {
+    justify-content: space-between;
+  }
+
+  .speed-option {
+    padding: 0.5rem 0.7rem;
+    font-size: 0.9rem;
+    flex: 1;
+    margin: 0 2px;
+  }
+
+  .value-display {
+    position: static;
+    display: inline-block;
+    margin-left: 10px;
+    margin-top: 0;
+  }
+
+  .setting-item {
+    margin-bottom: 25px;
+  }
+
+  .setting-group h3 {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-header h2 {
+    font-size: 1.3rem;
+  }
+
+  .setting-item input,
+  .setting-item select,
+  .setting-item textarea {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+
+  .speed-option {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.5rem;
+  }
+}
+
+/* 确保所有其他文字元素使用正常文字颜色 */
+.refresh-btn,
+.settings-btn,
+.send-btn,
+.mic-btn,
+.text-input,
+.settings-header h2,
+.setting-group h3,
+.setting-item label,
+.setting-item input,
+.setting-item select,
+.setting-item textarea,
+.save-btn,
+.close-btn,
+.input-note,
+.speed-option,
+.notification {
+  color: inherit; /* 继承正常的文字颜色，不使用渐变 */
+}
+
+/* 文本输入框占位符颜色 */
+.text-input::placeholder {
+  color: var(--text-light);
+}
+
+/* 按钮悬停状态保持正常颜色 */
+.refresh-btn:hover,
+.settings-btn:hover {
+  color: var(--primary-color);
+}
+
+.mic-btn:hover {
+  color: var(--primary-color);
+}
